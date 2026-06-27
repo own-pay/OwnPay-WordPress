@@ -1,0 +1,32 @@
+.opwc-admin-page .pagination .page-numbers{
+    color: rgb(41, 41, 166);
+    margin: 2px;
+    padding: 4px 12px;
+    border: 1px solid;
+    border-color: rgb(41, 41, 166);
+    border-radius: 4px;
+    text-decoration: none;
+}
+.opwc-admin-page .pagination .page-numbers.current{
+    color: green;
+    border-color: green;
+}
+.opwc-admin-page table th,
+.opwc-admin-page table td{
+    text-align: center;
+    vertical-align: middle;
+}
+.opwc-admin-page .modal_inner textarea{
+    text-wrap: nowrap;
+}
+
+/* Restrict admin menu sidebar icon size to prevent menu layout breakage */
+#adminmenu .toplevel_page_opwc .wp-menu-image img {
+    max-width: 20px !important;
+    max-height: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    vertical-align: middle;
+}
