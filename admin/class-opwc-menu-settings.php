@@ -71,12 +71,13 @@ if (!class_exists('OPWC_Menu_Settings')) {
             }
 
             wp_enqueue_script($this->plugin_name . '-admin-payment-list', plugin_dir_url(__FILE__) . 'js/opwc-payment-list.js', ['jquery'], $this->version, false);
-            wp_enqueue_script('bootstrap', OPWC_ASSETS_DIR . 'bootstrap/js/bootstrap.bundle.js', [], '5.3.3', false);
-            wp_enqueue_style('bootstrap', OPWC_ASSETS_DIR . 'bootstrap/css/bootstrap.min.css', [], '5.3.3', 'all');
+            wp_enqueue_script('opwc-bootstrap', OPWC_ASSETS_DIR . 'bootstrap/js/bootstrap.bundle.js', [], '5.3.3', false);
+            wp_enqueue_style('opwc-bootstrap', OPWC_ASSETS_DIR . 'bootstrap/css/bootstrap.min.css', [], '5.3.3', 'all');
         }
 
         public function include_template_file($file_name)
         {
+            $file_name = basename($file_name);
             $template_file = plugin_dir_path(dirname(__FILE__)) . 'admin/partials/' . $file_name;
 
             if (file_exists($template_file)) {

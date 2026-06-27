@@ -41,22 +41,29 @@
 				return;
 			}
 
-			var currentUrl = window.location.href;
+			// Build a clean URL using URLSearchParams to avoid duplicate params
+			var url = new URL(window.location.href);
+			var params = url.searchParams;
 
-			if (currentUrl.indexOf("?") !== -1) {
-				currentUrl +=
-					"&key=" + filterData["key"] + "&value=" + filterData["value"];
-			} else {
-				currentUrl +=
-					"?key=" + filterData["key"] + "&value=" + filterData["value"];
+			// Preserve only the base 'page' param and nonce, strip old filter/paged params
+			var cleanParams = new URLSearchParams();
+			cleanParams.set("page", params.get("page") || "opwc");
+
+			var nonce = $("#opwc_filter_nonce_field").val();
+			if (nonce) {
+				cleanParams.set("_opwc_nonce", nonce);
 			}
 
-			window.location.href = currentUrl;
+			cleanParams.set("key", filterData["key"]);
+			cleanParams.set("value", filterData["value"]);
+
+			url.search = cleanParams.toString();
+			window.location.href = url.toString();
 		});
 	}
 
 	function getFilterKeyValue() {
-		let filterData = [];
+		let filterData = {};
 
 		filterData["key"] = $(
 			".opwc-admin-page .payment-table-wrapper select#filter_key"

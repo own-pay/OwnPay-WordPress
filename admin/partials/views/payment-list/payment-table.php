@@ -2,6 +2,7 @@
 if (!defined('ABSPATH')) exit;
 ?>
 <div class="payment-table-wrapper">
+    <input type="hidden" id="opwc_filter_nonce_field" value="<?php echo esc_attr($nonce); ?>">
     <div class="table-header my-2">
         <div class="align-items-center">
             <div class="filter-actions">
@@ -14,7 +15,10 @@ if (!defined('ABSPATH')) exit;
                     <option value="asc" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'asc' ? print 'selected' : '' ?>><?php echo 'ASC'; ?></option>
                 </select>
                 <select name="status_filter_value" class="optional_field" id="status_filter">
+                    <option value="pending" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'pending' ? print 'selected' : '' ?>><?php esc_html_e('Pending Payment', 'ownpay-wordpress'); ?></option>
                     <option value="processing" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'processing' ? print 'selected' : '' ?>><?php esc_html_e('Processing', 'ownpay-wordpress'); ?></option>
+                    <option value="completed" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'completed' ? print 'selected' : '' ?>><?php esc_html_e('Completed', 'ownpay-wordpress'); ?></option>
+                    <option value="on-hold" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'on-hold' ? print 'selected' : '' ?>><?php esc_html_e('On Hold', 'ownpay-wordpress'); ?></option>
                     <option value="failed" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'failed' ? print 'selected' : '' ?>><?php esc_html_e('Failed', 'ownpay-wordpress'); ?></option>
                     <option value="refunded" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'refunded' ? print 'selected' : '' ?>><?php esc_html_e('Refunded', 'ownpay-wordpress'); ?></option>
                     <option value="cancelled" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'cancelled' ? print 'selected' : '' ?>><?php esc_html_e('Cancelled', 'ownpay-wordpress'); ?></option>
@@ -39,7 +43,9 @@ if (!defined('ABSPATH')) exit;
             <?php if (is_array($payments_details) && !empty($payments_details)) :
                 foreach ($payments_details as $payment_details) :
                     $order_id = $payment_details['order_id'];
-                    $order_link = admin_url('post.php?post=' . $order_id . '&action=edit');
+                    $order_link = class_exists('\Automattic\WooCommerce\Utilities\OrderUtil') && method_exists('\Automattic\WooCommerce\Utilities\OrderUtil', 'get_order_admin_edit_url')
+                        ? \Automattic\WooCommerce\Utilities\OrderUtil::get_order_admin_edit_url($order_id)
+                        : admin_url('post.php?post=' . $order_id . '&action=edit');
                     $order_id_html = '<a href="' . esc_url($order_link) . '" target="_blank">#' . $order_id . '</a>';
                     $username = strval($payment_details['username']);
                     $email = strval($payment_details['email']);
@@ -55,7 +61,7 @@ if (!defined('ABSPATH')) exit;
                         <td class="column-total"><?php echo esc_html($total_amount) ?></td>
                         <td class="column-date"><?php echo esc_html($order_date) ?></td>
                         <td class="column-response">
-                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="<?php echo '#staticBackdrop_' . esc_html($order_id) ?>">
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="<?php echo '#staticBackdrop_' . esc_attr($order_id) ?>">
                                 <?php esc_html_e('View Response', 'ownpay-wordpress') ?>
                             </button>
                         </td>
@@ -74,10 +80,15 @@ if (!defined('ABSPATH')) exit;
     <?php if (is_array($payments_details) && !empty($payments_details)) :
         foreach ($payments_details as $payment_details) :
             $order_id = $payment_details['order_id'];
-            $create_payment_response = get_option('opwc_payment_create_response_' . $order_id) ? get_option('opwc_payment_create_response_' . $order_id) : 'N/A';
-            $execute_payment_response = get_option('opwc_payment_execute_response_' . $order_id) ? get_option('opwc_payment_execute_response_' . $order_id) : 'N/A';
+            $create_payment_response = $payment_details['create_response'] ?? '';
+            $create_decoded = !empty($create_payment_response) ? json_decode($create_payment_response, true) : null;
+            $create_payment_formatted = is_array($create_decoded) ? wp_json_encode($create_decoded, JSON_PRETTY_PRINT) : 'N/A';
+
+            $execute_payment_response = $payment_details['execute_response'] ?? '';
+            $execute_decoded = !empty($execute_payment_response) ? json_decode($execute_payment_response, true) : null;
+            $execute_payment_formatted = is_array($execute_decoded) ? wp_json_encode($execute_decoded, JSON_PRETTY_PRINT) : 'N/A';
     ?>
-            <div class="modal fade" id="<?php echo esc_html('staticBackdrop_' . $order_id) ?>" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal fade" id="<?php echo esc_attr('staticBackdrop_' . $order_id) ?>" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -88,11 +99,11 @@ if (!defined('ABSPATH')) exit;
                             <div class="modal_inner d-flex justify-content-between">
                                 <div class="payment-create-response-section w-50 mx-2">
                                     <p class="response-section-title h6"><?php esc_html_e('Payment Initiation Response', 'ownpay-wordpress') ?></p>
-                                    <textarea rows="18" disabled name="create-response" class="border border-rounded w-100"><?php echo wp_json_encode(json_decode($create_payment_response), JSON_PRETTY_PRINT) ?></textarea>
+                                    <textarea rows="18" disabled name="create-response" class="border border-rounded w-100"><?php echo esc_textarea($create_payment_formatted) ?></textarea>
                                 </div>
                                 <div class="payment-processing-response-section w-50 mx-2">
                                     <p class="response-section-title h6"><?php esc_html_e('Webhook Call Payload', 'ownpay-wordpress') ?></p>
-                                    <textarea rows="18" disabled name="execute-response" class="border border-rounded w-100"><?php echo wp_json_encode(json_decode($execute_payment_response), JSON_PRETTY_PRINT) ?></textarea>
+                                    <textarea rows="18" disabled name="execute-response" class="border border-rounded w-100"><?php echo esc_textarea($execute_payment_formatted) ?></textarea>
                                 </div>
                             </div>
                         </div>
@@ -114,8 +125,8 @@ if (!defined('ABSPATH')) exit;
                 $pagination_link = paginate_links(array(
                     'base' => add_query_arg('paged', '%#%', esc_url($pagination_base_url)),
                     'format' => '',
-                    'current' => esc_html($current_page),
-                    'total' => esc_html($total_pages),
+                    'current' => (int) $current_page,
+                    'total'   => (int) $total_pages,
                 ));
 
                 if ($pagination_link) {

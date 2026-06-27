@@ -13,8 +13,14 @@ class OPWC_Hooks
 	{
 		add_filter('woocommerce_payment_gateways', [$this, 'add_ownpay_gateway']);
 		add_action('woocommerce_thankyou', [$this, 'custom_thankyou_page_status_notices'], 10, 1);
-		add_action('wp_footer', [$this, 'trigger_recalculation_on_payment_method_change']);
+		add_action('wp_enqueue_scripts', [$this, 'trigger_recalculation_on_payment_method_change']);
 		add_action('woocommerce_order_details_after_order_table', [$this, 'add_ownpay_details_to_order_table'], 10, 1);
+
+		// Cache invalidation hooks
+		add_action('woocommerce_update_order', [$this, 'clear_payments_cache']);
+		add_action('woocommerce_new_order', [$this, 'clear_payments_cache']);
+		add_action('woocommerce_order_status_changed', [$this, 'clear_payments_cache']);
+		add_action('woocommerce_delete_order', [$this, 'clear_payments_cache']);
 	}
 
 	/**
@@ -40,16 +46,14 @@ class OPWC_Hooks
 			return;
 		}
 
-		$status = isset($_GET['status']) ? sanitize_text_field(wp_unslash($_GET['status'])) : '';
-
-		if (strtolower($status) === 'completed' || $order->is_paid()) {
+		if ($order->is_paid()) {
 			echo '<div class="woocommerce-message" role="alert">';
 			echo '<strong>' . esc_html__('Success!', 'ownpay-wordpress') . '</strong> ';
 			echo esc_html__('Your payment has been completed successfully.', 'ownpay-wordpress');
 			echo '</div>';
 		}
 
-		if (strtolower($status) === 'failed' || $order->get_status() === 'failed') {
+		if ($order->has_status('failed')) {
 			echo '<div class="woocommerce-error" role="alert">';
 			echo '<strong>' . esc_html__('Error:', 'ownpay-wordpress') . '</strong> ';
 			echo esc_html__('Your payment has failed. Please try again or contact support.', 'ownpay-wordpress');
@@ -63,7 +67,7 @@ class OPWC_Hooks
 	public function trigger_recalculation_on_payment_method_change()
 	{
 		if (is_checkout()) {
-			wp_enqueue_script('opwc-frontend-script', OPWC_ASSETS_DIR . 'js/opwc-frontend.js', ['jquery'], OPWC_VERSION, false);
+			wp_enqueue_script('opwc-frontend-script', OPWC_ASSETS_DIR . 'js/opwc-frontend.js', ['jquery'], OPWC_VERSION, true);
 		}
 	}
 
@@ -78,7 +82,7 @@ class OPWC_Hooks
 
 		if ('ownpay' === $order->get_payment_method()) {
 			$order_id = $order->get_id();
-			$raw_response = get_option('opwc_payment_execute_response_' . $order_id);
+			$raw_response = $order->get_meta('_opwc_execute_response', true);
 			if (empty($raw_response)) {
 				return;
 			}
@@ -114,5 +118,13 @@ class OPWC_Hooks
 				echo '</table>';
 			}
 		}
+	}
+
+	/**
+	 * Clear cached payment logs by incrementing the cache version
+	 */
+	public function clear_payments_cache()
+	{
+		update_option('opwc_payments_cache_version', (string) time());
 	}
 }

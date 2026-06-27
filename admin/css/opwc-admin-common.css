@@ -21,7 +21,10 @@
 }
 
 /* Restrict admin menu sidebar icon size to prevent menu layout breakage */
-#adminmenu .toplevel_page_opwc .wp-menu-image img {
+#adminmenu .toplevel_page_opwc .wp-menu-image img,
+#adminmenu #toplevel_page_opwc img,
+.toplevel_page_opwc .wp-menu-image img,
+#adminmenu .toplevel_page_opwc .wp-menu-image {
     max-width: 20px !important;
     max-height: 20px !important;
     width: 20px !important;

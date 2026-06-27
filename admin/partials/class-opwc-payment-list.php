@@ -26,15 +26,17 @@ class OPWC_Payment_List
     public function render_payment_table()
     {
         $filters = $this->get_query_filters();
-        $paged = isset($_GET['paged']) ? absint(sanitize_text_field($_GET['paged'])) : 1;
+        $paged = isset($_GET['paged']) ? absint(wp_unslash($_GET['paged'])) : 1;
         $args = $this->get_query_args($paged);
         $current_url = admin_url('admin.php');
         $payments_details = opwc_get_payments_details($args, $filters);
         $payments_count = opwc_get_all_payments_count($filters);
         $total_pages = ceil($payments_count / $args['limit']);
+        $nonce = wp_create_nonce('opwc_filter_nonce');
         $pagination_base_url = add_query_arg(array(
-            'page' => sanitize_text_field(wp_unslash($_GET['page'])),
-            'paged' => $paged,
+            'page'        => 'opwc',
+            'paged'       => $paged,
+            '_opwc_nonce' => $nonce,
         ), $current_url);
 
         $table_template = __DIR__ . '/views/payment-list/payment-table.php';
@@ -62,8 +64,17 @@ class OPWC_Payment_List
     {
         $filters = [];
 
-        $filters['filter_key'] = isset($_GET['key']) ? strval(sanitize_text_field(wp_unslash($_GET['key']))) : '';
-        $filters['filter_value'] = isset($_GET['value']) ? strval(sanitize_text_field(wp_unslash($_GET['value']))) : '';
+        // Verify nonce if filter parameters are present
+        if (isset($_GET['key']) || isset($_GET['value'])) {
+            $nonce = isset($_GET['_opwc_nonce']) ? sanitize_text_field(wp_unslash($_GET['_opwc_nonce'])) : '';
+            if (!wp_verify_nonce($nonce, 'opwc_filter_nonce')) {
+                // Invalid or missing nonce — return empty filters (no filtering applied)
+                return $filters;
+            }
+        }
+
+        $filters['filter_key'] = isset($_GET['key']) ? sanitize_text_field(wp_unslash($_GET['key'])) : '';
+        $filters['filter_value'] = isset($_GET['value']) ? sanitize_text_field(wp_unslash($_GET['value'])) : '';
 
         return $filters;
     }

@@ -47,8 +47,6 @@ class OPWC
 		$this->load_dependencies();
 		$this->define_admin_hooks();
 		$this->init_hooks();
-
-		add_action('plugins_loaded', [$this, 'init_ownpay_payment']);
 	}
 
 	/**
@@ -56,10 +54,13 @@ class OPWC
 	 */
 	private function load_dependencies()
 	{
-		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-opwc-loader.php';
-		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/functions.php';
-		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-opwc-hooks.php';
-		require_once plugin_dir_path(dirname(__FILE__)) . 'admin/class-opwc-admin.php';
+		$plugin_base = plugin_dir_path(dirname(__FILE__));
+
+		require_once $plugin_base . 'includes/class-opwc-loader.php';
+		require_once $plugin_base . 'includes/functions.php';
+		require_once $plugin_base . 'includes/class-opwc-hooks.php';
+		require_once $plugin_base . 'includes/class-opwc-payment.php';
+		require_once $plugin_base . 'admin/class-opwc-admin.php';
 
 		$this->loader = new OPWC_Loader();
 	}
@@ -120,17 +121,5 @@ class OPWC
 	{
 		new OPWC_Hooks();
 	}
-
-	/**
-	 * Initialize OwnPay Payment.
-	 */
-	public function init_ownpay_payment()
-	{
-		$payment_file = plugin_dir_path(dirname(__FILE__)) . 'includes/class-opwc-payment.php';
-
-		if (file_exists($payment_file)) {
-			require_once $payment_file;
-			new OPWC_Payment();
-		}
-	}
 }
+

@@ -23,6 +23,7 @@ class OPWC_Payment extends WC_Payment_Gateway
 		$this->method_title = 'OwnPay';
 		$this->method_description = 'Accept payments via cards, bank transfer, and mobile banking using OwnPay.';
 		$this->has_fields = false;
+		$this->supports = array('products');
 
 		$this->init_form_fields();
 		$this->init_settings();
@@ -96,7 +97,7 @@ class OPWC_Payment extends WC_Payment_Gateway
 			</th>
 			<td class="forminp">
 				<fieldset>
-					<input class="input-text regular-input <?php echo esc_attr($data['class']); ?>" type="text" name="<?php echo esc_attr($field_key); ?>" id="<?php echo esc_attr($field_key); ?>" style="width: 350px; <?php echo esc_attr($data['css']); ?>" value="<?php echo esc_attr($value); ?>" placeholder="<?php echo esc_attr($data['placeholder']); ?>" <?php disabled($data['disabled'], true); ?> <?php echo $this->get_custom_attributes($data); ?> />
+					<input class="input-text regular-input <?php echo esc_attr($data['class']); ?>" type="text" name="<?php echo esc_attr($field_key); ?>" id="<?php echo esc_attr($field_key); ?>" style="width: 350px; <?php echo esc_attr($data['css']); ?>" value="<?php echo esc_attr($value); ?>" placeholder="<?php echo esc_attr($data['placeholder']); ?>" <?php disabled($data['disabled'], true); ?> <?php echo $this->get_custom_attribute_html($data); ?> />
 					<button type="button" class="button opwc-upload-button" data-input-id="<?php echo esc_attr($field_key); ?>"><?php esc_html_e('Upload / Choose Image', 'ownpay-wordpress'); ?></button>
 					<button type="button" class="button opwc-clear-button" data-input-id="<?php echo esc_attr($field_key); ?>"><?php esc_html_e('Clear', 'ownpay-wordpress'); ?></button>
 					<div class="opwc-logo-preview" style="margin-top: 10px;">
@@ -115,7 +116,7 @@ class OPWC_Payment extends WC_Payment_Gateway
 	 */
 	public function init_form_fields()
 	{
-		$webhook_url = class_exists('WC') ? WC()->api_request_url('OwnPay') : home_url('/?wc-api=ownpay');
+		$webhook_url = class_exists('WC') ? WC()->api_request_url('ownpay') : home_url('/?wc-api=ownpay');
 
 		$this->form_fields = array(
 			'enabled' => array(
@@ -149,9 +150,9 @@ class OPWC_Payment extends WC_Payment_Gateway
 			'api_url' => array(
 				'title' => __('OwnPay API Endpoint URL', 'ownpay-wordpress'),
 				'type' => 'text',
-				'default' => 'https://ownpay.org',
-				'placeholder' => 'https://pay.yourdomain.com',
-				'description' => __('The base URL of your OwnPay gateway installation.', 'ownpay-wordpress'),
+				'default' => '',
+				'placeholder' => 'https://pay.ownpay.org',
+				'description' => __('The base URL of your OwnPay gateway installation (e.g. https://pay.yourdomain.com).', 'ownpay-wordpress'),
 				'desc_tip'    => true,
 			),
 			'api_key' => array(
@@ -216,7 +217,10 @@ class OPWC_Payment extends WC_Payment_Gateway
 
 		if (empty($this->api_url) || empty($this->api_key)) {
 			wc_add_notice(__('OwnPay Gateway is not fully configured. Please configure API credentials.', 'ownpay-wordpress'), 'error');
-			return;
+			return array(
+				'result' => 'failure',
+				'messages' => __('OwnPay Gateway is not fully configured.', 'ownpay-wordpress')
+			);
 		}
 
 		$initiate_url = $this->api_url . '/api/v1/payments';
@@ -225,10 +229,9 @@ class OPWC_Payment extends WC_Payment_Gateway
 		$body = array(
 			'amount'         => (string) $order->get_total(),
 			'currency'       => strtoupper($order->get_currency()),
-			'callback_url'   => WC()->api_request_url('OwnPay'),
+			'callback_url'   => WC()->api_request_url('ownpay'),
 			'redirect_url'   => $this->get_return_url($order),
 			'cancel_url'     => $order->get_cancel_order_url(),
-			'customer_email' => $order->get_billing_email(),
 			'customer_mail'  => $order->get_billing_email(),
 			'customer_name'  => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),
 			'customer_phone' => $order->get_billing_phone(),
@@ -252,40 +255,49 @@ class OPWC_Payment extends WC_Payment_Gateway
 			'sslverify' => true,
 		));
 
-		// Save request payload response logs for administration debug
-		$response_body = wp_remote_retrieve_body($response);
-		update_option('opwc_payment_create_response_' . $order_id, $response_body, 'no');
-
 		if (is_wp_error($response)) {
-			wc_add_notice(__('Payment Initiation Error: ', 'ownpay-wordpress') . $response->get_error_message(), 'error');
-			return;
+			$err_msg = esc_html($response->get_error_message());
+			wc_add_notice(__('OwnPay Payment Error: Connection failed. ', 'ownpay-wordpress') . $err_msg, 'error');
+			return array(
+				'result'   => 'failure',
+				'messages' => $err_msg
+			);
 		}
+
+		// Save request payload response logs as order meta (HPOS-compatible)
+		$response_body = wp_remote_retrieve_body($response);
+		$order->update_meta_data('_opwc_create_response', $response_body);
+		$order->save();
 
 		$response_code = wp_remote_retrieve_response_code($response);
 		$response_data = json_decode($response_body, true);
 
 		if ($response_code !== 201 || !isset($response_data['success']) || $response_data['success'] !== true) {
-			$error_message = isset($response_data['error']) ? $response_data['error'] : __('Could not initiate payment session.', 'ownpay-wordpress');
+			$error_message = isset($response_data['error']) ? esc_html($response_data['error']) : __('Could not initiate payment session.', 'ownpay-wordpress');
 			if (isset($response_data['errors']) && is_array($response_data['errors'])) {
 				$messages = [];
 				foreach ($response_data['errors'] as $err) {
-					$messages[] = $err['message'];
+					$messages[] = esc_html($err['message']);
 				}
 				$error_message = implode(', ', $messages);
 			}
 			wc_add_notice(__('OwnPay Payment Error: ', 'ownpay-wordpress') . $error_message, 'error');
-			return;
+			return array(
+				'result' => 'failure',
+				'messages' => $error_message
+			);
 		}
 
 		$data = $response_data['data'] ?? [];
 
 		if (isset($data['payment_id'], $data['checkout_url'])) {
-			update_post_meta($order_id, '_ownpay_payment_id', sanitize_text_field($data['payment_id']));
+			$order->update_meta_data('_ownpay_payment_id', sanitize_text_field($data['payment_id']));
 			if (isset($data['token'])) {
-				update_post_meta($order_id, '_ownpay_token', sanitize_text_field($data['token']));
+				$order->update_meta_data('_ownpay_token', sanitize_text_field($data['token']));
 			}
+			$order->save();
 
-			$order->update_status('pending-payment', __('Awaiting OwnPay payment.', 'ownpay-wordpress'));
+			$order->update_status('pending', __('Awaiting OwnPay payment.', 'ownpay-wordpress'));
 
 			return array(
 				'result'   => 'success',
@@ -293,7 +305,10 @@ class OPWC_Payment extends WC_Payment_Gateway
 			);
 		} else {
 			wc_add_notice(__('Invalid response format from OwnPay gateway.', 'ownpay-wordpress'), 'error');
-			return;
+			return array(
+				'result' => 'failure',
+				'messages' => __('Invalid response format from OwnPay gateway.', 'ownpay-wordpress')
+			);
 		}
 	}
 
@@ -311,7 +326,15 @@ class OPWC_Payment extends WC_Payment_Gateway
 
 		// Signature headers checklist
 		$signature = '';
-		$headers = getallheaders();
+		$headers = function_exists('getallheaders') ? getallheaders() : [];
+		if (empty($headers)) {
+			foreach ($_SERVER as $k => $v) {
+				if (str_starts_with($k, 'HTTP_')) {
+					$header_name = str_replace('_', '-', substr($k, 5));
+					$headers[$header_name] = $v;
+				}
+			}
+		}
 
 		// Convert headers to lowercase for uniform comparison
 		$lowercase_headers = array_change_key_case($headers, CASE_LOWER);
@@ -399,8 +422,32 @@ class OPWC_Payment extends WC_Payment_Gateway
 			exit;
 		}
 
-		// Save webhook execution response log for admin overview
-		update_option('opwc_payment_execute_response_' . $order_id, $raw_body, 'no');
+		// Verify webhook amount and currency against order details
+		$order_total    = (float) $order->get_total();
+		$order_currency = strtoupper($order->get_currency());
+		$webhook_currency = strtoupper($event_data['currency'] ?? '');
+		$webhook_amount = isset($event_data['amount']) ? (float) $event_data['amount'] : -1.0;
+
+		if ($webhook_amount <= 0 || abs($webhook_amount - $order_total) > 0.01 || $webhook_currency !== $order_currency) {
+			$order->add_order_note(sprintf(
+				__('OwnPay Webhook: Currency or Amount mismatch. Expected: %s %s, Received: %s %s. Manual review required.', 'ownpay-wordpress'),
+				$order_total,
+				$order_currency,
+				$webhook_amount >= 0 ? $webhook_amount : 'missing/invalid',
+				$webhook_currency ? $webhook_currency : 'missing/invalid'
+			));
+			status_header(200); // 200 to prevent OwnPay retries
+			echo 'Currency or Amount mismatch. Flagged for review.';
+			exit;
+		}
+
+		// Save webhook execution response log as order meta (HPOS-compatible), limit to 8KB
+		if (strlen($raw_body) < 8192) {
+			$order->update_meta_data('_opwc_execute_response', $raw_body);
+		} else {
+			$order->update_meta_data('_opwc_execute_response', wp_json_encode(['error' => 'Webhook payload size limit exceeded.']));
+		}
+		$order->save();
 
 		// Process transaction status change
 		$status_lower = strtolower($status);
@@ -425,12 +472,16 @@ class OPWC_Payment extends WC_Payment_Gateway
 			echo esc_html__('Webhook processed. Order completed.', 'ownpay-wordpress');
 			exit;
 		} elseif ($status_lower === 'failed') {
-			$order->update_status('failed', __('OwnPay Webhook: Payment failed.', 'ownpay-wordpress'));
+			if (!$order->is_paid()) {
+				$order->update_status('failed', __('OwnPay Webhook: Payment failed.', 'ownpay-wordpress'));
+			}
 			status_header(200);
 			echo esc_html__('Webhook processed. Order marked failed.', 'ownpay-wordpress');
 			exit;
 		} elseif ($status_lower === 'cancelled') {
-			$order->update_status('cancelled', __('OwnPay Webhook: Payment cancelled.', 'ownpay-wordpress'));
+			if (!$order->is_paid()) {
+				$order->update_status('cancelled', __('OwnPay Webhook: Payment cancelled.', 'ownpay-wordpress'));
+			}
 			status_header(200);
 			echo esc_html__('Webhook processed. Order marked cancelled.', 'ownpay-wordpress');
 			exit;
@@ -451,7 +502,7 @@ class OPWC_Payment extends WC_Payment_Gateway
 			return;
 		}
 
-		$payment_id = get_post_meta($order_id, '_ownpay_payment_id', true);
+		$payment_id = $order->get_meta('_ownpay_payment_id', true);
 		if (empty($payment_id)) {
 			return;
 		}
@@ -460,7 +511,7 @@ class OPWC_Payment extends WC_Payment_Gateway
 			return;
 		}
 
-		$query_url = $this->api_url . '/api/v1/payments/' . $payment_id;
+		$query_url = $this->api_url . '/api/v1/payments/' . rawurlencode($payment_id);
 
 		$headers = array(
 			'Accept'        => 'application/json',
@@ -468,8 +519,9 @@ class OPWC_Payment extends WC_Payment_Gateway
 		);
 
 		$response = wp_remote_get($query_url, array(
-			'headers' => $headers,
-			'timeout' => 15,
+			'headers'   => $headers,
+			'timeout'   => 15,
+			'sslverify' => true,
 		));
 
 		if (is_wp_error($response)) {
@@ -491,8 +543,25 @@ class OPWC_Payment extends WC_Payment_Gateway
 		$trx_id = $data['trx_id'] ?? '';
 		$gateway_trx_id = $data['gateway_trx_id'] ?? '';
 
+		$order_currency = strtoupper($order->get_currency());
+		$api_currency = strtoupper($data['currency'] ?? '');
+		$order_total = (float) $order->get_total();
+		$api_amount = isset($data['amount']) ? (float) $data['amount'] : -1.0;
+
+		if ($api_amount <= 0 || abs($api_amount - $order_total) > 0.01 || $api_currency !== $order_currency) {
+			$order->add_order_note(sprintf(
+				__('OwnPay Redirect: Currency or Amount mismatch during verification. Expected: %s %s, Received: %s %s. Manual review required.', 'ownpay-wordpress'),
+				$order_total,
+				$order_currency,
+				$api_amount >= 0 ? $api_amount : 'missing/invalid',
+				$api_currency ? $api_currency : 'missing/invalid'
+			));
+			return;
+		}
+
 		if ($status === 'completed' || $status === 'paid' || $status === 'success') {
-			$order->payment_complete($gateway_trx_id ? $gateway_trx_id : $trx_id);
+			$fallback_trx_id = $gateway_trx_id ? $gateway_trx_id : ($trx_id ? $trx_id : $payment_id);
+			$order->payment_complete($fallback_trx_id);
 
 			if ($this->complete_order_after_payment) {
 				$order->update_status('completed');
@@ -521,12 +590,21 @@ class OPWC_Payment extends WC_Payment_Gateway
 			$fee_percentage = (float) $this->fee_percentage;
 
 			if ($fee_percentage > 0) {
-				$fee = ($cart->cart_contents_total + $cart->get_shipping_total()) * ($fee_percentage / 100);
+				$discounted_subtotal = max(0, $cart->cart_contents_total - $cart->get_discount_total());
+				$fee = ($discounted_subtotal + $cart->get_shipping_total()) * ($fee_percentage / 100);
 				WC()->cart->add_fee(
 					__('OwnPay Processing Fee', 'ownpay-wordpress') . ' (' . $fee_percentage . '%)',
 					$fee
 				);
 			}
 		}
+	}
+
+	/**
+	 * Sanitize and validate custom image upload field
+	 */
+	public function validate_image_upload_field($key, $value)
+	{
+		return is_null($value) ? '' : esc_url_raw(trim($value));
 	}
 }

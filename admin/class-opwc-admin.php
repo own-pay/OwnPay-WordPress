@@ -19,7 +19,7 @@ class OPWC_Admin
 		$this->opwc_add_menu();
 	}
 
-	public function opwc_enqueue_styles()
+	public function opwc_enqueue_styles($hook)
 	{
 		$admin_styles = $this->opwc_get_admin_styles();
 
@@ -33,7 +33,7 @@ class OPWC_Admin
 	public function opwc_enqueue_scripts()
 	{
 		// Conditional check for WooCommerce OwnPay settings section
-		if (isset($_GET['page']) && $_GET['page'] === 'wc-settings' && isset($_GET['tab']) && $_GET['tab'] === 'checkout' && isset($_GET['section']) && $_GET['section'] === 'ownpay') {
+		if (isset($_GET['page']) && $_GET['page'] === 'wc-settings' && isset($_GET['section']) && $_GET['section'] === 'ownpay') {
 			wp_enqueue_media();
 			wp_enqueue_script('opwc-admin-upload', plugin_dir_url(__FILE__) . 'js/opwc-admin-upload.js', ['jquery'], $this->version, false);
 		}
@@ -49,7 +49,7 @@ class OPWC_Admin
 
 	public function opwc_add_menu()
 	{
-		$admin_menu = include plugin_dir_path(dirname(__FILE__)) . 'admin/class-opwc-menu-settings.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'admin/class-opwc-menu-settings.php';
 		$admin_menu = new OPWC_Menu_Settings($this->plugin_name, $this->version);
 		return $admin_menu;
 	}

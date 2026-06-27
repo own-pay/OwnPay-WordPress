@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     OwnPay WordPress
- * Plugin URI:      https://wordpress.org/plugins/ownpay-wordpress
+ * Plugin URI:      https://github.com/own-pay/OwnPay-WordPress
  * Description:     OwnPay WordPress Plugin adds a simple, secure, and modern payment solution for your online store, allowing customers to pay via card, bank transfer, and mobile banking.
  * Author:          OwnPay
  * Author URI:      https://ownpay.org
@@ -21,7 +21,7 @@ if (!defined('WPINC')) die;
  * Current plugin version.
  */
 define('OPWC_VERSION', '1.0.0');
-define('OPWC_PLUGIN_DIR', plugin_dir_url(__FILE__));
+define('OPWC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('OPWC_ASSETS_DIR', plugin_dir_url(__FILE__) . 'assets/');
 
 if (!function_exists('is_plugin_active')) {
@@ -33,10 +33,12 @@ if (!function_exists('is_plugin_active')) {
  */
 function opwc_check_requirements()
 {
-    if (is_plugin_active('woocommerce/woocommerce.php') || class_exists('WooCommerce')) {
+    if (class_exists('WooCommerce') || is_plugin_active('woocommerce/woocommerce.php')) {
         return true;
     } else {
-        add_action('admin_notices', 'opwc_missing_wc_notice');
+        if (is_admin()) {
+            add_action('admin_notices', 'opwc_missing_wc_notice');
+        }
         return false;
     }
 }
@@ -52,12 +54,10 @@ function opwc_missing_wc_notice()
     printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
 }
 
-add_action('plugins_loaded', 'opwc_check_requirements');
-
 /**
  * The core plugin class
  */
-require plugin_dir_path(__FILE__) . 'includes/class-opwc.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-opwc.php';
 
 /**
  * Begins execution of the plugin.
@@ -70,4 +70,4 @@ function opwc_run_plugin()
     }
 }
 
-opwc_run_plugin();
+add_action('plugins_loaded', 'opwc_run_plugin');
