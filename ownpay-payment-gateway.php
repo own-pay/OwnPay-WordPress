@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     OwnPay Payment Gateway
- * Plugin URI:      https://github.com/own-pay/ownpay-payment-gateway
+ * Plugin URI:      https://github.com/own-pay/OwnPay-WordPress
  * Description:     Accept card, bank transfer, and mobile banking payments in WooCommerce via OwnPay.
  * Author:          OwnPay
  * Author URI:      https://ownpay.org
@@ -13,7 +13,6 @@
  * License URI:     https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:     ownpay-payment-gateway
  * Domain Path:     /languages
- * GitHub Plugin URI: https://github.com/own-pay/ownpay-payment-gateway
  */
 
 if (!defined('ABSPATH')) exit;
@@ -52,7 +51,7 @@ function opwc_check_requirements()
 function opwc_missing_wc_notice()
 {
     $class = 'notice notice-error';
-    $message = __('OwnPay plugin requires WooCommerce to be installed and active.', 'ownpay-payment-gateway');
+    $message = __('OwnPay Payment Gateway requires WooCommerce to be installed and active.', 'ownpay-payment-gateway');
 
     printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
 }

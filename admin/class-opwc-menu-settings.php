@@ -13,6 +13,7 @@ if (!class_exists('OPWC_Menu_Settings')) {
     {
         private $plugin_name;
         private $version;
+        private $page_hook;
         public $class_prefix = 'class-opwc-';
 
         public function __construct($plugin_name, $version)
@@ -20,6 +21,7 @@ if (!class_exists('OPWC_Menu_Settings')) {
             $this->plugin_name = $plugin_name;
             $this->version = $version;
             add_action('admin_menu', [$this, 'register_admin_menu']);
+            add_action('admin_enqueue_scripts', [$this, 'enqueue_page_scripts']);
         }
 
         public function get_submenu_list()
@@ -33,9 +35,15 @@ if (!class_exists('OPWC_Menu_Settings')) {
             $main_menu_title = 'OwnPay';
             $parent_slug = 'opwc';
             $capability = 'manage_options';
-            $menu_icon_url = plugins_url('../assets/logo/dashboard-menu-icon.jpg', __FILE__);
+            $svg_file = plugin_dir_path(__FILE__) . '../assets/logo/icon.svg';
+            if (file_exists($svg_file)) {
+                $svg_content = file_get_contents($svg_file);
+                $menu_icon_url = 'data:image/svg+xml;base64,' . base64_encode($svg_content);
+            } else {
+                $menu_icon_url = 'dashicons-admin-generic';
+            }
 
-            add_menu_page(
+            $this->page_hook = add_menu_page(
                 $main_menu_title,
                 $main_menu_title,
                 $capability,
@@ -69,8 +77,23 @@ if (!class_exists('OPWC_Menu_Settings')) {
                 $menu_class = new OPWC_Payment_List();
                 $menu_class->menu_page();
             }
+        }
 
-            wp_enqueue_script($this->plugin_name . '-admin-payment-list', plugin_dir_url(__FILE__) . 'js/opwc-payment-list.js', ['jquery'], $this->version, false);
+        /**
+         * Enqueue scripts only on the OwnPay admin page
+         */
+        public function enqueue_page_scripts($hook)
+        {
+            if ($hook !== $this->page_hook) {
+                return;
+            }
+            wp_enqueue_script(
+                $this->plugin_name . '-admin-payment-list',
+                plugin_dir_url(__FILE__) . 'js/opwc-payment-list.js',
+                ['jquery'],
+                $this->version,
+                true
+            );
         }
 
         public function include_template_file($file_name)

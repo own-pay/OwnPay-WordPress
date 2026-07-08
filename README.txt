@@ -51,6 +51,20 @@ Yes! Input any image URL under the "Custom Gateway Logo URL" option in the payme
 2. Customer checkout payment method selection.
 3. OwnPay admin dashboard showing recent WooCommerce transaction logs.
 
+== External Services ==
+
+This plugin sends payment data to your OwnPay gateway installation - a self-hosted or
+managed payment server whose URL you configure in WooCommerce > Settings > Payments > OwnPay.
+
+Data sent to your configured endpoint when a customer initiates a checkout:
+
+* Order amount and currency
+* Customer email address, name, and phone number
+* WooCommerce order ID (as a payment reference)
+
+No data is sent to any OwnPay-operated server by default. The API endpoint is entirely
+controlled by the site administrator. For OwnPay's privacy policy, visit https://ownpay.org/privacy.
+
 == Privacy ==
 
 This plugin communicates with the OwnPay payment API (configurable endpoint) to process transactions. No customer data is sent to OwnPay without the customer initiating a payment. Transaction details are stored in WooCommerce order meta. For OwnPay's privacy policy, visit https://ownpay.org/privacy.
@@ -59,3 +73,8 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 = 1.0.0 =
 * Initial release of the OwnPay Payment Gateway plugin.
+
+== Upgrade Notice ==
+
+= 1.0.0 =
+Initial release.

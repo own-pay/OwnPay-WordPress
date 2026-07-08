@@ -1,0 +1,259 @@
+# Copyright (C) 2026 OwnPay
+# This file is distributed under the same license as the OwnPay Payment Gateway plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: OwnPay Payment Gateway 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ownpay-payment-gateway\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-07-08T15:00:00+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: Custom Agent Generator\n"
+"X-Domain: ownpay-payment-gateway\n"
+
+#: ownpay-payment-gateway.php:54
+msgid "OwnPay Payment Gateway requires WooCommerce to be installed and active."
+msgstr ""
+
+#: includes/class-opwc-payment.php:124
+msgid "Enable/Disable"
+msgstr ""
+
+#: includes/class-opwc-payment.php:126
+msgid "Enable OwnPay Payment"
+msgstr ""
+
+#: includes/class-opwc-payment.php:130
+msgid "Title"
+msgstr ""
+
+#: includes/class-opwc-payment.php:132
+msgid "OwnPay Payment"
+msgstr ""
+
+#: includes/class-opwc-payment.php:133
+msgid "This controls the title which the user sees during checkout."
+msgstr ""
+
+#: includes/class-opwc-payment.php:137
+msgid "Custom Gateway Logo"
+msgstr ""
+
+#: includes/class-opwc-payment.php:141
+msgid "Upload or choose a custom image to replace the default OwnPay logo on the checkout page. Leave blank to use the default logo."
+msgstr ""
+
+#: includes/class-opwc-payment.php:145
+msgid "Description"
+msgstr ""
+
+#: includes/class-opwc-payment.php:147
+msgid "Pay securely via Cards, Bank Transfer, or Mobile Banking."
+msgstr ""
+
+#: includes/class-opwc-payment.php:148
+msgid "This controls the description which the user sees during checkout."
+msgstr ""
+
+#: includes/class-opwc-payment.php:152
+msgid "OwnPay API Endpoint URL"
+msgstr ""
+
+#: includes/class-opwc-payment.php:156
+msgid "The base URL of your OwnPay gateway installation (e.g. https://pay.yourdomain.com)."
+msgstr ""
+
+#: includes/class-opwc-payment.php:160
+msgid "API Key"
+msgstr ""
+
+#: includes/class-opwc-payment.php:163
+msgid "The Bearer API Key generated in your OwnPay Admin Panel."
+msgstr ""
+
+#: includes/class-opwc-payment.php:167
+msgid "Webhook Secret"
+msgstr ""
+
+#: includes/class-opwc-payment.php:172
+msgid "The shared secret used to verify incoming webhook signatures from OwnPay. You MUST configure this outbound Webhook URL in your OwnPay Merchant Dashboard: %1$s"
+msgstr ""
+
+#: includes/class-opwc-payment.php:178
+msgid "Add Extra Fee"
+msgstr ""
+
+#: includes/class-opwc-payment.php:180
+msgid "Enable Extra Fee"
+msgstr ""
+
+#: includes/class-opwc-payment.php:182
+msgid "Check this if you want to add an extra charge for paying via OwnPay."
+msgstr ""
+
+#: includes/class-opwc-payment.php:186
+msgid "Fee Percentage"
+msgstr ""
+
+#: includes/class-opwc-payment.php:193
+msgid "Percentage fee to charge. E.g. 1.5 for 1.5%."
+msgstr ""
+
+#: includes/class-opwc-payment.php:197
+msgid "Change Order Status"
+msgstr ""
+
+#: includes/class-opwc-payment.php:199
+msgid "Complete order after payment success!"
+msgstr ""
+
+#: includes/class-opwc-payment.php:201
+msgid "If enabled, the order status will transition to 'Completed.' Otherwise, it will remain in 'Processing' status."
+msgstr ""
+
+#: includes/class-opwc-payment.php:216
+msgid "Order not found."
+msgstr ""
+
+#: includes/class-opwc-payment.php:221
+msgid "OwnPay Gateway is not fully configured. Please configure API credentials."
+msgstr ""
+
+#: includes/class-opwc-payment.php:224
+msgid "OwnPay Gateway is not fully configured."
+msgstr ""
+
+#: includes/class-opwc-payment.php:262
+msgid "OwnPay Payment Error: Connection failed. "
+msgstr ""
+
+#: includes/class-opwc-payment.php:278
+msgid "Could not initiate payment session."
+msgstr ""
+
+#: includes/class-opwc-payment.php:286
+msgid "OwnPay Payment Error: "
+msgstr ""
+
+#: includes/class-opwc-payment.php:302
+msgid "Awaiting OwnPay payment."
+msgstr ""
+
+#: includes/class-opwc-payment.php:309
+msgid "Invalid response format from OwnPay gateway."
+msgstr ""
+
+#: includes/class-opwc-payment.php:312
+msgid "Invalid response format from OwnPay gateway."
+msgstr ""
+
+#: includes/class-opwc-payment.php:326
+msgid "Empty request body."
+msgstr ""
+
+#: includes/class-opwc-payment.php:358
+msgid "Webhook signature header missing."
+msgstr ""
+
+#: includes/class-opwc-payment.php:364
+msgid "Webhook secret is not configured in settings."
+msgstr ""
+
+#: includes/class-opwc-payment.php:373
+msgid "Signature verification failed."
+msgstr ""
+
+#: includes/class-opwc-payment.php:380
+msgid "Invalid JSON payload."
+msgstr ""
+
+#: includes/class-opwc-payment.php:429
+msgid "Order not found matching reference."
+msgstr ""
+
+#: includes/class-opwc-payment.php:442
+msgid "OwnPay Webhook: Currency or Amount mismatch. Expected: %1$s %2$s, Received: %3$s %4$s. Manual review required."
+msgstr ""
+
+#: includes/class-opwc-payment.php:475
+msgid "OwnPay Webhook: Payment completed. Transaction ID: %1$s. Gateway Transaction: %2$s."
+msgstr ""
+
+#: includes/class-opwc-payment.php:482
+msgid "Webhook processed. Order completed."
+msgstr ""
+
+#: includes/class-opwc-payment.php:486
+msgid "OwnPay Webhook: Payment failed."
+msgstr ""
+
+#: includes/class-opwc-payment.php:489
+msgid "Webhook processed. Order marked failed."
+msgstr ""
+
+#: includes/class-opwc-payment.php:493
+msgid "OwnPay Webhook: Payment cancelled."
+msgstr ""
+
+#: includes/class-opwc-payment.php:496
+msgid "Webhook processed. Order marked cancelled."
+msgstr ""
+
+#: includes/class-opwc-payment.php:501
+msgid "Webhook received but event type is ignored."
+msgstr ""
+
+#: includes/class-opwc-payment.php:564
+msgid "OwnPay Redirect: Currency or Amount mismatch during verification. Expected: %1$s %2$s, Received: %3$s %4$s. Manual review required."
+msgstr ""
+
+#: includes/class-opwc-payment.php:585
+msgid "OwnPay Redirect: Payment verified. Transaction ID: %1$s. Gateway Transaction: %2$s."
+msgstr ""
+
+#: includes/class-opwc-payment.php:608
+msgid "OwnPay Processing Fee"
+msgstr ""
+
+#: includes/class-opwc-payment.php:102
+msgid "Upload / Choose Image"
+msgstr ""
+
+#: includes/class-opwc-payment.php:103
+msgid "Clear"
+msgstr ""
+
+#: includes/class-opwc-hooks.php:51
+msgid "Success!"
+msgstr ""
+
+#: includes/class-opwc-hooks.php:52
+msgid "Your payment has been completed successfully."
+msgstr ""
+
+#: includes/class-opwc-hooks.php:58
+msgid "Error:"
+msgstr ""
+
+#: includes/class-opwc-hooks.php:59
+msgid "Your payment has failed. Please try again or contact support."
+msgstr ""
+
+#: includes/class-opwc-hooks.php:103
+msgid "OwnPay Payment Details"
+msgstr ""
+
+#: includes/class-opwc-hooks.php:107
+msgid "Payment Channel:"
+msgstr ""
+
+#: includes/class-opwc-hooks.php:111
+msgid "Transaction ID:"
+msgstr ""
+
+#: includes/class-opwc-hooks.php:115
+msgid "Gateway Transaction ID:"
+msgstr ""

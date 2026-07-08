@@ -26,7 +26,8 @@ class OPWC_Payment_List
     public function render_payment_table()
     {
         $filters = $this->get_query_filters();
-        $paged = isset($_GET['paged']) ? absint(wp_unslash($_GET['paged'])) : 1;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- `paged` is a read-only pagination offset sanitized via absint(), not a form data submission.
+		$paged = isset($_GET['paged']) ? absint(wp_unslash($_GET['paged'])) : 1;
         $args = $this->get_query_args($paged);
         $current_url = admin_url('admin.php');
         $payments_details = opwc_get_payments_details($args, $filters);

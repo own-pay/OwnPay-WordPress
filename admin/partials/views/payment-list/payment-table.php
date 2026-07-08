@@ -7,6 +7,9 @@ if (!defined('ABSPATH')) exit;
         <div>
             <div class="filter-actions">
                 <select name="filter_key" id="filter_key">
+                    <?php
+                    // phpcs:disable WordPress.Security.NonceVerification.Recommended -- These $_GET reads are read-only option comparisons for pre-selecting filter UI state. Nonce is verified in OPWC_Payment_List::get_query_filters() before this template is included.
+                    ?>
                     <option value="date" <?php isset($_GET['key']) && sanitize_text_field(wp_unslash($_GET['key'])) == 'date' ? print 'selected' : '' ?>><?php esc_html_e('By Order Date', 'ownpay-payment-gateway') ?></option>
                     <option value="status" <?php isset($_GET['key']) && sanitize_text_field(wp_unslash($_GET['key'])) == 'status' ? print 'selected' : '' ?>><?php esc_html_e('By Order Status', 'ownpay-payment-gateway') ?></option>
                 </select>
@@ -23,6 +26,7 @@ if (!defined('ABSPATH')) exit;
                     <option value="refunded" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'refunded' ? print 'selected' : '' ?>><?php esc_html_e('Refunded', 'ownpay-payment-gateway'); ?></option>
                     <option value="cancelled" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'cancelled' ? print 'selected' : '' ?>><?php esc_html_e('Cancelled', 'ownpay-payment-gateway'); ?></option>
                 </select>
+                <?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
                 <button type="submit" name="search" id="filter" class="button action"><?php esc_html_e('Filter', 'ownpay-payment-gateway') ?></button>
             </div>
         </div>
@@ -41,6 +45,7 @@ if (!defined('ABSPATH')) exit;
         </thead>
         <tbody>
             <?php if (is_array($payments_details) && !empty($payments_details)) :
+                // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- These are local template variables extracted from $payment_details in a template include, not global-scope declarations.
                 foreach ($payments_details as $payment_details) :
                     $order_id = $payment_details['order_id'];
                     $order_link = class_exists('\Automattic\WooCommerce\Utilities\OrderUtil') && method_exists('\Automattic\WooCommerce\Utilities\OrderUtil', 'get_order_admin_edit_url')
@@ -52,6 +57,7 @@ if (!defined('ABSPATH')) exit;
                     $status = strval($payment_details['status']);
                     $total_amount = strval($payment_details['total_amount']);
                     $order_date = strval($payment_details['order_date']);
+                    // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
             ?>
                     <tr>
                         <td class="column-id"><?php echo wp_kses_post($order_id_html) ?></td>
@@ -78,6 +84,7 @@ if (!defined('ABSPATH')) exit;
         </tbody>
     </table>
     <?php if (is_array($payments_details) && !empty($payments_details)) :
+        // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Local template variables in a template include, not global declarations.
         foreach ($payments_details as $payment_details) :
             $order_id = $payment_details['order_id'];
             $create_payment_response = $payment_details['create_response'] ?? '';
@@ -87,6 +94,7 @@ if (!defined('ABSPATH')) exit;
             $execute_payment_response = $payment_details['execute_response'] ?? '';
             $execute_decoded = !empty($execute_payment_response) ? json_decode($execute_payment_response, true) : null;
             $execute_payment_formatted = is_array($execute_decoded) ? wp_json_encode($execute_decoded, JSON_PRETTY_PRINT) : 'N/A';
+            // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     ?>
             <div class="opwc-modal-overlay" id="<?php echo esc_attr('opwc-modal-' . $order_id) ?>">
                 <div class="opwc-modal">
@@ -118,6 +126,7 @@ if (!defined('ABSPATH')) exit;
         <div class="pagination mt-2">
             <?php
             if ($total_pages > 1) {
+                // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Local template variables for pagination, not global declarations.
                 $current_page = max(1, $paged);
 
                 $pagination_link = paginate_links(array(
@@ -126,6 +135,7 @@ if (!defined('ABSPATH')) exit;
                     'current' => (int) $current_page,
                     'total'   => (int) $total_pages,
                 ));
+                // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
                 if ($pagination_link) {
                     echo wp_kses_post($pagination_link);

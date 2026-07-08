@@ -65,6 +65,7 @@ class OPWC_Payment extends WC_Payment_Gateway
 			);
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- This is a WooCommerce core filter, not our own hook.
 		return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
 	}
 
@@ -93,17 +94,17 @@ class OPWC_Payment extends WC_Payment_Gateway
 		<tr valign="top">
 			<th scope="row" class="titledesc">
 				<label for="<?php echo esc_attr($field_key); ?>"><?php echo wp_kses_post($data['title']); ?></label>
-				<?php echo $this->get_tooltip_html($data); ?>
+				<?php echo wp_kses_post($this->get_tooltip_html($data)); ?>
 			</th>
 			<td class="forminp">
 				<fieldset>
-					<input class="input-text regular-input <?php echo esc_attr($data['class']); ?>" type="text" name="<?php echo esc_attr($field_key); ?>" id="<?php echo esc_attr($field_key); ?>" style="width: 350px; <?php echo esc_attr($data['css']); ?>" value="<?php echo esc_attr($value); ?>" placeholder="<?php echo esc_attr($data['placeholder']); ?>" <?php disabled($data['disabled'], true); ?> <?php echo $this->get_custom_attribute_html($data); ?> />
+					<input class="input-text regular-input <?php echo esc_attr($data['class']); ?>" type="text" name="<?php echo esc_attr($field_key); ?>" id="<?php echo esc_attr($field_key); ?>" style="width: 350px; <?php echo esc_attr($data['css']); ?>" value="<?php echo esc_attr($value); ?>" placeholder="<?php echo esc_attr($data['placeholder']); ?>" <?php disabled($data['disabled'], true); ?> <?php echo wp_kses_post($this->get_custom_attribute_html($data)); ?> />
 					<button type="button" class="button opwc-upload-button" data-input-id="<?php echo esc_attr($field_key); ?>"><?php esc_html_e('Upload / Choose Image', 'ownpay-payment-gateway'); ?></button>
 					<button type="button" class="button opwc-clear-button" data-input-id="<?php echo esc_attr($field_key); ?>"><?php esc_html_e('Clear', 'ownpay-payment-gateway'); ?></button>
 					<div class="opwc-logo-preview" style="margin-top: 10px;">
 						<img id="<?php echo esc_attr($field_key); ?>-preview" src="<?php echo esc_url($value); ?>" style="max-height: 50px; width: auto; height: auto; display: <?php echo !empty($value) ? 'block' : 'none'; ?>; border: 1px solid #ddd; padding: 4px; background: #fff;" />
 					</div>
-					<?php echo $this->get_description_html($data); ?>
+					<?php echo wp_kses_post($this->get_description_html($data)); ?>
 				</fieldset>
 			</td>
 		</tr>
@@ -167,7 +168,8 @@ class OPWC_Payment extends WC_Payment_Gateway
 				'type' => 'password',
 				'default' => '',
 				'description' => sprintf(
-					__('The shared secret used to verify incoming webhook signatures from OwnPay. You MUST configure this outbound Webhook URL in your OwnPay Merchant Dashboard: %s', 'ownpay-payment-gateway'),
+					/* translators: %1$s: Webhook URL wrapped in a code element. */
+					__('The shared secret used to verify incoming webhook signatures from OwnPay. You MUST configure this outbound Webhook URL in your OwnPay Merchant Dashboard: %1$s', 'ownpay-payment-gateway'),
 					'<br/><code>' . esc_url($webhook_url) . '</code>'
 				),
 				'desc_tip'    => false,
@@ -317,6 +319,7 @@ class OPWC_Payment extends WC_Payment_Gateway
 	 */
 	public function handle_webhook()
 	{
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- php://input is the only way to read the raw POST body for HMAC signature verification; no WordPress API equivalent exists.
 		$raw_body = file_get_contents('php://input');
 		if (empty($raw_body)) {
 			status_header(400);
@@ -405,9 +408,14 @@ class OPWC_Payment extends WC_Payment_Gateway
 			$payment_id = $event_data['id'] ?? $event_data['payment_id'] ?? '';
 			if (!empty($payment_id)) {
 				$orders = wc_get_orders(array(
-					'meta_key'   => '_ownpay_payment_id',
-					'meta_value' => sanitize_text_field($payment_id),
-					'limit'      => 1
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- No HPOS-native alternative exists for looking up orders by custom meta value via wc_get_orders().
+					'meta_query' => array(
+						array(
+							'key'   => '_ownpay_payment_id',
+							'value' => sanitize_text_field($payment_id),
+						),
+					),
+					'limit' => 1,
 				));
 				if (!empty($orders)) {
 					$order = $orders[0];
@@ -430,7 +438,8 @@ class OPWC_Payment extends WC_Payment_Gateway
 
 		if ($webhook_amount <= 0 || abs($webhook_amount - $order_total) > 0.01 || $webhook_currency !== $order_currency) {
 			$order->add_order_note(sprintf(
-				__('OwnPay Webhook: Currency or Amount mismatch. Expected: %s %s, Received: %s %s. Manual review required.', 'ownpay-payment-gateway'),
+				/* translators: 1: Expected order total amount. 2: Expected currency code. 3: Received amount from webhook. 4: Received currency code from webhook. */
+				__('OwnPay Webhook: Currency or Amount mismatch. Expected: %1$s %2$s, Received: %3$s %4$s. Manual review required.', 'ownpay-payment-gateway'),
 				$order_total,
 				$order_currency,
 				$webhook_amount >= 0 ? $webhook_amount : 'missing/invalid',
@@ -462,7 +471,8 @@ class OPWC_Payment extends WC_Payment_Gateway
 				}
 
 				$order->add_order_note(sprintf(
-					__('OwnPay Webhook: Payment completed. Transaction ID: %s. Gateway Transaction: %s.', 'ownpay-payment-gateway'),
+					/* translators: 1: OwnPay internal transaction ID. 2: Downstream gateway transaction ID. */
+					__('OwnPay Webhook: Payment completed. Transaction ID: %1$s. Gateway Transaction: %2$s.', 'ownpay-payment-gateway'),
 					esc_html($transaction_id),
 					esc_html($gateway_trx_id)
 				));
@@ -550,7 +560,8 @@ class OPWC_Payment extends WC_Payment_Gateway
 
 		if ($api_amount <= 0 || abs($api_amount - $order_total) > 0.01 || $api_currency !== $order_currency) {
 			$order->add_order_note(sprintf(
-				__('OwnPay Redirect: Currency or Amount mismatch during verification. Expected: %s %s, Received: %s %s. Manual review required.', 'ownpay-payment-gateway'),
+				/* translators: 1: Expected order total amount. 2: Expected currency code. 3: Received amount from API. 4: Received currency code from API. */
+				__('OwnPay Redirect: Currency or Amount mismatch during verification. Expected: %1$s %2$s, Received: %3$s %4$s. Manual review required.', 'ownpay-payment-gateway'),
 				$order_total,
 				$order_currency,
 				$api_amount >= 0 ? $api_amount : 'missing/invalid',
@@ -570,7 +581,8 @@ class OPWC_Payment extends WC_Payment_Gateway
 			}
 
 			$order->add_order_note(sprintf(
-				__('OwnPay Redirect: Payment verified. Transaction ID: %s. Gateway Transaction: %s.', 'ownpay-payment-gateway'),
+				/* translators: 1: OwnPay internal transaction ID. 2: Downstream gateway transaction ID. */
+				__('OwnPay Redirect: Payment verified. Transaction ID: %1$s. Gateway Transaction: %2$s.', 'ownpay-payment-gateway'),
 				esc_html($trx_id),
 				esc_html($gateway_trx_id)
 			));
