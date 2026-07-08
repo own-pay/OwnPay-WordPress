@@ -1,0 +1,161 @@
+.opwc-admin-page .pagination .page-numbers{
+    color: rgb(41, 41, 166);
+    margin: 2px;
+    padding: 4px 12px;
+    border: 1px solid;
+    border-color: rgb(41, 41, 166);
+    border-radius: 4px;
+    text-decoration: none;
+}
+.opwc-admin-page .pagination .page-numbers.current{
+    color: green;
+    border-color: green;
+}
+.opwc-admin-page table th,
+.opwc-admin-page table td{
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* ============================================
+   WordPress Native Modal (replaces Bootstrap)
+   ============================================ */
+.opwc-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100000;
+    justify-content: center;
+    align-items: center;
+}
+
+.opwc-modal-overlay.is-active {
+    display: flex;
+}
+
+.opwc-modal {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 900px;
+    width: 90%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    animation: opwc-modal-in 0.2s ease-out;
+}
+
+@keyframes opwc-modal-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.opwc-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.opwc-modal-header p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.opwc-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.opwc-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.opwc-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.opwc-modal-body .opwc-modal-columns {
+    display: flex;
+    gap: 16px;
+}
+
+.opwc-modal-body .opwc-modal-column {
+    flex: 1;
+    min-width: 0;
+}
+
+.opwc-modal-body .opwc-modal-column p {
+    margin: 0 0 8px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.opwc-modal-body textarea {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    resize: vertical;
+    text-wrap: nowrap;
+}
+
+.opwc-modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid #e0e0e0;
+    text-align: right;
+}
+
+/* ============================================
+   Utility Classes (replaces Bootstrap utils)
+   ============================================ */
+.opwc-flex { display: flex; }
+.opwc-flex-1 { flex: 1; }
+.opwc-gap-16 { gap: 16px; }
+.opwc-w-50 { width: 50%; }
+.opwc-w-100 { width: 100%; }
+.opwc-text-center { text-align: center; }
+.opwc-text-danger { color: #dc3232; }
+.opwc-mt-2 { margin-top: 8px; }
+.opwc-mb-2 { margin-bottom: 8px; }
+.opwc-mx-2 { margin-left: 8px; margin-right: 8px; }
+.opwc-m-2 { margin: 8px; }
+.opwc-px-2 { padding-left: 8px; padding-right: 8px; }
+.opwc-admin-page .modal_inner textarea{
+    text-wrap: nowrap;
+}
+
+/* Restrict admin menu sidebar icon size to prevent menu layout breakage */
+#adminmenu .toplevel_page_opwc .wp-menu-image img,
+#adminmenu #toplevel_page_opwc img,
+.toplevel_page_opwc .wp-menu-image img,
+#adminmenu .toplevel_page_opwc .wp-menu-image {
+    max-width: 20px !important;
+    max-height: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    vertical-align: middle;
+}
