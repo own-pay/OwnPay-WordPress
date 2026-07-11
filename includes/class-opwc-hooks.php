@@ -21,6 +21,9 @@ class OPWC_Hooks
 		add_action('woocommerce_new_order', [$this, 'clear_payments_cache']);
 		add_action('woocommerce_order_status_changed', [$this, 'clear_payments_cache']);
 		add_action('woocommerce_delete_order', [$this, 'clear_payments_cache']);
+
+		// WooCommerce Blocks checkout integration
+		add_action('woocommerce_blocks_loaded', [$this, 'register_block_support']);
 	}
 
 	/**
@@ -30,6 +33,28 @@ class OPWC_Hooks
 	{
 		$gateways[] = 'OPWC_Payment';
 		return $gateways;
+	}
+
+	/**
+	 * Register OwnPay with the WooCommerce Blocks payment method registry.
+	 *
+	 * Only loaded when the AbstractPaymentMethodType API is present (WC 7.6+),
+	 * so the plugin remains compatible with older WooCommerce versions.
+	 */
+	public function register_block_support()
+	{
+		if (!class_exists('Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType')) {
+			return;
+		}
+
+		require_once plugin_dir_path(__FILE__) . 'class-opwc-blocks.php';
+
+		add_action(
+			'woocommerce_blocks_payment_method_type_registration',
+			function (Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $registry) {
+				$registry->register(new OPWC_Blocks());
+			}
+		);
 	}
 
 	/**
@@ -93,11 +118,11 @@ class OPWC_Hooks
 			}
 
 			// Extract properties from payload data envelope
-			$event_data = $response['data'] ?? $response;
+			$event_data = isset($response['data']) && is_array($response['data']) ? $response['data'] : $response;
 
-			$transaction_id = $event_data['transaction_id'] ?? '';
-			$gateway_trx_id = $event_data['gateway_trx_id'] ?? '';
-			$gateway = $event_data['gateway'] ?? '';
+			$transaction_id = sanitize_text_field($event_data['transaction_id'] ?? '');
+			$gateway_trx_id = sanitize_text_field($event_data['gateway_trx_id'] ?? '');
+			$gateway        = sanitize_text_field($event_data['gateway'] ?? '');
 
 			if ($transaction_id || $gateway_trx_id) {
 				echo '<h3>' . esc_html__('OwnPay Payment Details', 'ownpay-payment-gateway') . '</h3>';

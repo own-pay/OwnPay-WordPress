@@ -266,13 +266,14 @@ class OPWC_Payment extends WC_Payment_Gateway
 			);
 		}
 
-		// Save request payload response logs as order meta (HPOS-compatible)
+		// Retrieve and decode the API response
 		$response_body = wp_remote_retrieve_body($response);
-		$order->update_meta_data('_opwc_create_response', $response_body);
-		$order->save();
-
 		$response_code = wp_remote_retrieve_response_code($response);
 		$response_data = json_decode($response_body, true);
+
+		// Store the decoded-and-re-encoded JSON rather than the raw response string (HPOS-compatible)
+		$order->update_meta_data('_opwc_create_response', is_array($response_data) ? wp_json_encode($response_data) : '');
+		$order->save();
 
 		if ($response_code !== 201 || !isset($response_data['success']) || $response_data['success'] !== true) {
 			$error_message = isset($response_data['error']) ? esc_html($response_data['error']) : __('Could not initiate payment session.', 'ownpay-payment-gateway');
@@ -382,22 +383,24 @@ class OPWC_Payment extends WC_Payment_Gateway
 		}
 
 		// The webhook event properties mapping (OwnPay envelopes event + data)
-		$event_type = $payload['event'] ?? '';
-		$event_data = $payload['data'] ?? $payload;
+		// sanitize_key() is used for internal identifiers; sanitize_text_field() for human-readable strings.
+		$event_type = sanitize_key($payload['event'] ?? '');
+		$event_data = isset($payload['data']) && is_array($payload['data']) ? $payload['data'] : $payload;
 
-		$transaction_id = $event_data['transaction_id'] ?? '';
-		$gateway_trx_id = $event_data['gateway_trx_id'] ?? '';
-		$status = $event_data['status'] ?? '';
-		$amount = $event_data['amount'] ?? '';
-		$reference = $event_data['reference'] ?? '';
+		$transaction_id = sanitize_text_field($event_data['transaction_id'] ?? '');
+		$gateway_trx_id = sanitize_text_field($event_data['gateway_trx_id'] ?? '');
+		$status         = sanitize_key($event_data['status'] ?? '');
+		$amount         = sanitize_text_field((string) ($event_data['amount'] ?? ''));
+		$reference      = $event_data['reference'] ?? '';
 
 		if (is_array($reference)) {
 			$reference = $reference['reference'] ?? '';
 		}
+		$reference = sanitize_text_field($reference);
 
 		// If reference is not found in standard properties, search inside metadata
 		if (empty($reference) && isset($event_data['metadata']) && is_array($event_data['metadata'])) {
-			$reference = $event_data['metadata']['reference'] ?? '';
+			$reference = sanitize_text_field($event_data['metadata']['reference'] ?? '');
 		}
 
 		$order_id = absint($reference);
@@ -405,14 +408,14 @@ class OPWC_Payment extends WC_Payment_Gateway
 
 		if (!$order) {
 			// Try looking up order by payment_id meta if reference is missing
-			$payment_id = $event_data['id'] ?? $event_data['payment_id'] ?? '';
+			$payment_id = sanitize_text_field($event_data['id'] ?? $event_data['payment_id'] ?? '');
 			if (!empty($payment_id)) {
 				$orders = wc_get_orders(array(
 					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- No HPOS-native alternative exists for looking up orders by custom meta value via wc_get_orders().
 					'meta_query' => array(
 						array(
 							'key'   => '_ownpay_payment_id',
-							'value' => sanitize_text_field($payment_id),
+							'value' => $payment_id,
 						),
 					),
 					'limit' => 1,
@@ -431,10 +434,10 @@ class OPWC_Payment extends WC_Payment_Gateway
 		}
 
 		// Verify webhook amount and currency against order details
-		$order_total    = (float) $order->get_total();
-		$order_currency = strtoupper($order->get_currency());
-		$webhook_currency = strtoupper($event_data['currency'] ?? '');
-		$webhook_amount = isset($event_data['amount']) ? (float) $event_data['amount'] : -1.0;
+		$order_total      = (float) $order->get_total();
+		$order_currency   = strtoupper($order->get_currency());
+		$webhook_currency = strtoupper(sanitize_key($event_data['currency'] ?? ''));
+		$webhook_amount   = isset($event_data['amount']) ? (float) $event_data['amount'] : -1.0;
 
 		if ($webhook_amount <= 0 || abs($webhook_amount - $order_total) > 0.01 || $webhook_currency !== $order_currency) {
 			$order->add_order_note(sprintf(
@@ -446,22 +449,25 @@ class OPWC_Payment extends WC_Payment_Gateway
 				$webhook_currency ? $webhook_currency : 'missing/invalid'
 			));
 			status_header(200); // 200 to prevent OwnPay retries
-			echo 'Currency or Amount mismatch. Flagged for review.';
+			echo esc_html__('Currency or Amount mismatch. Flagged for review.', 'ownpay-payment-gateway');
 			exit;
 		}
 
-		// Save webhook execution response log as order meta (HPOS-compatible), limit to 8KB
+		// Save webhook execution response log as order meta (HPOS-compatible), limit to 8KB.
+		// Re-encode the already HMAC-verified and json_decode()'d $payload rather than storing
+		// the raw body string, so only structured, sanitize-ready data is persisted.
 		if (strlen($raw_body) < 8192) {
-			$order->update_meta_data('_opwc_execute_response', $raw_body);
+			$order->update_meta_data('_opwc_execute_response', wp_json_encode($payload));
 		} else {
-			$order->update_meta_data('_opwc_execute_response', wp_json_encode(['error' => 'Webhook payload size limit exceeded.']));
+			$order->update_meta_data('_opwc_execute_response', wp_json_encode(array('error' => 'Webhook payload size limit exceeded.')));
 		}
 		$order->save();
 
 		// Process transaction status change
-		$status_lower = strtolower($status);
-		if ($event_type === 'payment.transaction.completed' || $status_lower === 'completed' || $status_lower === 'paid') {
+		// $status was already sanitized with sanitize_key() above.
+		if ($event_type === 'payment.transaction.completed' || $status === 'completed' || $status === 'paid') {
 			if (!$order->is_paid()) {
+				// $transaction_id and $gateway_trx_id were sanitized with sanitize_text_field() above.
 				$order->payment_complete($gateway_trx_id ? $gateway_trx_id : $transaction_id);
 
 				if ($this->complete_order_after_payment) {
@@ -473,22 +479,22 @@ class OPWC_Payment extends WC_Payment_Gateway
 				$order->add_order_note(sprintf(
 					/* translators: 1: OwnPay internal transaction ID. 2: Downstream gateway transaction ID. */
 					__('OwnPay Webhook: Payment completed. Transaction ID: %1$s. Gateway Transaction: %2$s.', 'ownpay-payment-gateway'),
-					esc_html($transaction_id),
-					esc_html($gateway_trx_id)
+					$transaction_id,
+					$gateway_trx_id
 				));
 			}
 
 			status_header(200);
 			echo esc_html__('Webhook processed. Order completed.', 'ownpay-payment-gateway');
 			exit;
-		} elseif ($status_lower === 'failed') {
+		} elseif ($status === 'failed') {
 			if (!$order->is_paid()) {
 				$order->update_status('failed', __('OwnPay Webhook: Payment failed.', 'ownpay-payment-gateway'));
 			}
 			status_header(200);
 			echo esc_html__('Webhook processed. Order marked failed.', 'ownpay-payment-gateway');
 			exit;
-		} elseif ($status_lower === 'cancelled') {
+		} elseif ($status === 'cancelled') {
 			if (!$order->is_paid()) {
 				$order->update_status('cancelled', __('OwnPay Webhook: Payment cancelled.', 'ownpay-payment-gateway'));
 			}
@@ -548,14 +554,14 @@ class OPWC_Payment extends WC_Payment_Gateway
 			return;
 		}
 
-		$data = $response_data['data'] ?? [];
-		$status = strtolower($data['status'] ?? '');
-		$trx_id = $data['trx_id'] ?? '';
-		$gateway_trx_id = $data['gateway_trx_id'] ?? '';
+		$data           = isset($response_data['data']) && is_array($response_data['data']) ? $response_data['data'] : array();
+		$status         = sanitize_key($data['status'] ?? '');
+		$trx_id         = sanitize_text_field($data['trx_id'] ?? '');
+		$gateway_trx_id = sanitize_text_field($data['gateway_trx_id'] ?? '');
 
 		$order_currency = strtoupper($order->get_currency());
-		$api_currency = strtoupper($data['currency'] ?? '');
-		$order_total = (float) $order->get_total();
+		$api_currency   = strtoupper(sanitize_key($data['currency'] ?? ''));
+		$order_total    = (float) $order->get_total();
 		$api_amount = isset($data['amount']) ? (float) $data['amount'] : -1.0;
 
 		if ($api_amount <= 0 || abs($api_amount - $order_total) > 0.01 || $api_currency !== $order_currency) {
@@ -571,6 +577,7 @@ class OPWC_Payment extends WC_Payment_Gateway
 		}
 
 		if ($status === 'completed' || $status === 'paid' || $status === 'success') {
+			// All three variables were sanitized with sanitize_text_field() above.
 			$fallback_trx_id = $gateway_trx_id ? $gateway_trx_id : ($trx_id ? $trx_id : $payment_id);
 			$order->payment_complete($fallback_trx_id);
 
@@ -583,8 +590,8 @@ class OPWC_Payment extends WC_Payment_Gateway
 			$order->add_order_note(sprintf(
 				/* translators: 1: OwnPay internal transaction ID. 2: Downstream gateway transaction ID. */
 				__('OwnPay Redirect: Payment verified. Transaction ID: %1$s. Gateway Transaction: %2$s.', 'ownpay-payment-gateway'),
-				esc_html($trx_id),
-				esc_html($gateway_trx_id)
+				$trx_id,
+				$gateway_trx_id
 			));
 		}
 	}

@@ -35,13 +35,12 @@ if (!class_exists('OPWC_Menu_Settings')) {
             $main_menu_title = 'OwnPay';
             $parent_slug = 'opwc';
             $capability = 'manage_options';
-            $svg_file = plugin_dir_path(__FILE__) . '../assets/logo/icon.svg';
-            if (file_exists($svg_file)) {
-                $svg_content = file_get_contents($svg_file);
-                $menu_icon_url = 'data:image/svg+xml;base64,' . base64_encode($svg_content);
-            } else {
-                $menu_icon_url = 'dashicons-admin-generic';
-            }
+
+            // Use the SVG URL directly — no filesystem read required.
+            $icon_path = plugin_dir_path(__FILE__) . '../assets/logo/icon.svg';
+            $menu_icon_url = file_exists($icon_path)
+                ? OPWC_PLUGIN_URL . 'assets/logo/icon.svg'
+                : 'dashicons-admin-generic';
 
             $this->page_hook = add_menu_page(
                 $main_menu_title,
@@ -70,6 +69,10 @@ if (!class_exists('OPWC_Menu_Settings')) {
 
         public function payment_list_page()
         {
+            if (!current_user_can('manage_options')) {
+                wp_die(esc_html__('You do not have permission to view this page.', 'ownpay-payment-gateway'));
+            }
+
             $file_name = 'class-opwc-payment-list.php';
             $this->include_template_file($file_name);
 

@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) exit;
 function opwc_get_payments_details($args = [], $filters = [])
 {
 	$cache_version = opwc_get_cache_version();
-	$cache_key = 'opwc_payments_' . $cache_version . '_' . md5(serialize($args) . serialize($filters));
+	$cache_key = 'opwc_payments_' . $cache_version . '_' . md5(wp_json_encode($args) . wp_json_encode($filters));
 	$cached_data = wp_cache_get($cache_key);
 
 	if ($cached_data !== false) {
@@ -93,7 +93,7 @@ function opwc_add_status_filter($args, $filters)
 function opwc_get_all_payments_count($filters = [])
 {
 	$cache_version = opwc_get_cache_version();
-	$cache_key = 'opwc_payments_count_' . $cache_version . '_' . md5(serialize($filters));
+	$cache_key = 'opwc_payments_count_' . $cache_version . '_' . md5(wp_json_encode($filters));
 	$cached_count = wp_cache_get($cache_key);
 
 	if ($cached_count !== false) {
@@ -118,14 +118,16 @@ function opwc_get_all_payments_count($filters = [])
 }
 
 /**
- * Helper to get active cache version prefix
+ * Helper to get active cache version prefix.
+ * The option is seeded on plugin activation and bumped by clear_payments_cache().
+ * This getter never writes to the database.
  */
 function opwc_get_cache_version()
 {
-	$version = get_option('opwc_payments_cache_version');
+	$version = get_option('opwc_payments_cache_version', '');
 	if (empty($version)) {
-		$version = (string) time();
-		update_option('opwc_payments_cache_version', $version);
+		// Fallback for edge cases (e.g. pre-activation state); do not write from here.
+		$version = '1';
 	}
 	return $version;
 }

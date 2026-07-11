@@ -7,12 +7,13 @@ jQuery(document).ready(function ($) {
         var preview = $('#' + inputId + '-preview');
 
         // Create the media frame.
+        // Strings are passed from PHP via wp_localize_script() to support translation.
         var file_frame = wp.media.frames.file_frame = wp.media({
-            title: 'Select or Upload Payment Gateway Logo',
+            title: (typeof opwcUploadI18n !== 'undefined') ? opwcUploadI18n.mediaTitle : '',
             button: {
-                text: 'Use this Image'
+                text: (typeof opwcUploadI18n !== 'undefined') ? opwcUploadI18n.mediaButton : ''
             },
-            multiple: false  // Set to true to allow multiple files to be selected
+            multiple: false
         });
 
         // When an image is selected, run a callback.

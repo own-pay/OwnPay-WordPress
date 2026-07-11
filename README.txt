@@ -1,12 +1,12 @@
 === OwnPay Payment Gateway ===
-Contributors: OwnPay
+Contributors: ownpay
 Donate link: https://ownpay.org/donate
 Tags: ownpay, payment gateway, woocommerce, checkout, cards payment
 Requires at least: 5.1
 Tested up to: 7.0
 Requires PHP: 8.0
 Requires Plugins: woocommerce
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,10 +71,9 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 == Changelog ==
 
+= 1.1.0 =
+* Fix some bugs
+
 = 1.0.0 =
 * Initial release of the OwnPay Payment Gateway plugin.
 
-== Upgrade Notice ==
-
-= 1.0.0 =
-Initial release.

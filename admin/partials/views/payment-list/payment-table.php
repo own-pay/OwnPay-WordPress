@@ -6,27 +6,28 @@ if (!defined('ABSPATH')) exit;
     <div class="table-header my-2">
         <div>
             <div class="filter-actions">
+                <?php
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce is verified in OPWC_Payment_List::get_query_filters() before this template is included. These reads are read-only for pre-selecting the UI state.
+                $opwc_current_key   = isset($_GET['key'])   ? sanitize_key(wp_unslash($_GET['key']))   : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                $opwc_current_value = isset($_GET['value']) ? sanitize_key(wp_unslash($_GET['value'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                ?>
                 <select name="filter_key" id="filter_key">
-                    <?php
-                    // phpcs:disable WordPress.Security.NonceVerification.Recommended -- These $_GET reads are read-only option comparisons for pre-selecting filter UI state. Nonce is verified in OPWC_Payment_List::get_query_filters() before this template is included.
-                    ?>
-                    <option value="date" <?php isset($_GET['key']) && sanitize_text_field(wp_unslash($_GET['key'])) == 'date' ? print 'selected' : '' ?>><?php esc_html_e('By Order Date', 'ownpay-payment-gateway') ?></option>
-                    <option value="status" <?php isset($_GET['key']) && sanitize_text_field(wp_unslash($_GET['key'])) == 'status' ? print 'selected' : '' ?>><?php esc_html_e('By Order Status', 'ownpay-payment-gateway') ?></option>
+                    <option value="date" <?php selected($opwc_current_key, 'date'); ?>><?php esc_html_e('By Order Date', 'ownpay-payment-gateway') ?></option>
+                    <option value="status" <?php selected($opwc_current_key, 'status'); ?>><?php esc_html_e('By Order Status', 'ownpay-payment-gateway') ?></option>
                 </select>
                 <select name="date_filter_value" class="" id="date_filter">
-                    <option value="desc" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'desc' ? print 'selected' : '' ?>><?php echo 'DESC'; ?></option>
-                    <option value="asc" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'asc' ? print 'selected' : '' ?>><?php echo 'ASC'; ?></option>
+                    <option value="desc" <?php selected($opwc_current_value, 'desc'); ?>><?php echo esc_html('DESC'); ?></option>
+                    <option value="asc" <?php selected($opwc_current_value, 'asc'); ?>><?php echo esc_html('ASC'); ?></option>
                 </select>
                 <select name="status_filter_value" class="optional_field" id="status_filter">
-                    <option value="pending" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'pending' ? print 'selected' : '' ?>><?php esc_html_e('Pending Payment', 'ownpay-payment-gateway'); ?></option>
-                    <option value="processing" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'processing' ? print 'selected' : '' ?>><?php esc_html_e('Processing', 'ownpay-payment-gateway'); ?></option>
-                    <option value="completed" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'completed' ? print 'selected' : '' ?>><?php esc_html_e('Completed', 'ownpay-payment-gateway'); ?></option>
-                    <option value="on-hold" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'on-hold' ? print 'selected' : '' ?>><?php esc_html_e('On Hold', 'ownpay-payment-gateway'); ?></option>
-                    <option value="failed" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'failed' ? print 'selected' : '' ?>><?php esc_html_e('Failed', 'ownpay-payment-gateway'); ?></option>
-                    <option value="refunded" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'refunded' ? print 'selected' : '' ?>><?php esc_html_e('Refunded', 'ownpay-payment-gateway'); ?></option>
-                    <option value="cancelled" <?php isset($_GET['value']) && sanitize_text_field(wp_unslash($_GET['value'])) == 'cancelled' ? print 'selected' : '' ?>><?php esc_html_e('Cancelled', 'ownpay-payment-gateway'); ?></option>
+                    <option value="pending" <?php selected($opwc_current_value, 'pending'); ?>><?php esc_html_e('Pending Payment', 'ownpay-payment-gateway'); ?></option>
+                    <option value="processing" <?php selected($opwc_current_value, 'processing'); ?>><?php esc_html_e('Processing', 'ownpay-payment-gateway'); ?></option>
+                    <option value="completed" <?php selected($opwc_current_value, 'completed'); ?>><?php esc_html_e('Completed', 'ownpay-payment-gateway'); ?></option>
+                    <option value="on-hold" <?php selected($opwc_current_value, 'on-hold'); ?>><?php esc_html_e('On Hold', 'ownpay-payment-gateway'); ?></option>
+                    <option value="failed" <?php selected($opwc_current_value, 'failed'); ?>><?php esc_html_e('Failed', 'ownpay-payment-gateway'); ?></option>
+                    <option value="refunded" <?php selected($opwc_current_value, 'refunded'); ?>><?php esc_html_e('Refunded', 'ownpay-payment-gateway'); ?></option>
+                    <option value="cancelled" <?php selected($opwc_current_value, 'cancelled'); ?>><?php esc_html_e('Cancelled', 'ownpay-payment-gateway'); ?></option>
                 </select>
-                <?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
                 <button type="submit" name="search" id="filter" class="button action"><?php esc_html_e('Filter', 'ownpay-payment-gateway') ?></button>
             </div>
         </div>
@@ -51,7 +52,7 @@ if (!defined('ABSPATH')) exit;
                     $order_link = class_exists('\Automattic\WooCommerce\Utilities\OrderUtil') && method_exists('\Automattic\WooCommerce\Utilities\OrderUtil', 'get_order_admin_edit_url')
                         ? \Automattic\WooCommerce\Utilities\OrderUtil::get_order_admin_edit_url($order_id)
                         : admin_url('post.php?post=' . $order_id . '&action=edit');
-                    $order_id_html = '<a href="' . esc_url($order_link) . '" target="_blank">#' . $order_id . '</a>';
+                    $order_id_html = '<a href="' . esc_url($order_link) . '" target="_blank">#' . absint($order_id) . '</a>';
                     $username = strval($payment_details['username']);
                     $email = strval($payment_details['email']);
                     $status = strval($payment_details['status']);
@@ -67,7 +68,7 @@ if (!defined('ABSPATH')) exit;
                         <td class="column-total"><?php echo esc_html($total_amount) ?></td>
                         <td class="column-date"><?php echo esc_html($order_date) ?></td>
                         <td class="column-response">
-                            <button type="button" class="button" data-opwc-modal="<?php echo '#opwc-modal-' . esc_attr($order_id) ?>">
+                            <button type="button" class="button" data-opwc-modal="<?php echo esc_attr('#opwc-modal-' . absint($order_id)) ?>">
                                 <?php esc_html_e('View Response', 'ownpay-payment-gateway') ?>
                             </button>
                         </td>
@@ -96,7 +97,7 @@ if (!defined('ABSPATH')) exit;
             $execute_payment_formatted = is_array($execute_decoded) ? wp_json_encode($execute_decoded, JSON_PRETTY_PRINT) : 'N/A';
             // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
     ?>
-            <div class="opwc-modal-overlay" id="<?php echo esc_attr('opwc-modal-' . $order_id) ?>">
+            <div class="opwc-modal-overlay" id="<?php echo esc_attr('opwc-modal-' . absint($order_id)) ?>">
                 <div class="opwc-modal">
                     <div class="opwc-modal-header">
                         <p><?php esc_html_e('OwnPay API Details', 'ownpay-payment-gateway'); ?></p>

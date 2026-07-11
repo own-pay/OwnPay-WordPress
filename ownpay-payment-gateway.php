@@ -5,7 +5,7 @@
  * Description:     Accept card, bank transfer, and mobile banking payments in WooCommerce via OwnPay.
  * Author:          OwnPay
  * Author URI:      https://ownpay.org
- * Version:         1.0.0
+ * Version:         1.1.0
  * Requires at least: 5.1
  * Requires PHP:    8.0
  * Requires Plugins: woocommerce
@@ -26,16 +26,17 @@ define('OPWC_VERSION', '1.0.0');
 define('OPWC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('OPWC_ASSETS_DIR', plugin_dir_url(__FILE__) . 'assets/');
 
-if (!function_exists('is_plugin_active')) {
-    include_once(ABSPATH . '/wp-admin/includes/plugin.php');
-}
+
 
 /**
- * Check for the existence of WooCommerce
+ * Check for the existence of WooCommerce.
+ * Uses class_exists() which works on both front-end and admin.
+ * is_plugin_active() is intentionally omitted here as it is only loaded
+ * in admin context; the 'Requires Plugins' header enforces the dependency at activation.
  */
 function opwc_check_requirements()
 {
-    if (class_exists('WooCommerce') || is_plugin_active('woocommerce/woocommerce.php')) {
+    if (class_exists('WooCommerce')) {
         return true;
     } else {
         if (is_admin()) {
@@ -60,6 +61,16 @@ function opwc_missing_wc_notice()
  * The core plugin class
  */
 require_once plugin_dir_path(__FILE__) . 'includes/class-opwc.php';
+
+/**
+ * Plugin activation: seed the cache version option so the getter never
+ * calls update_option() on every page load.
+ */
+function opwc_activate()
+{
+    add_option('opwc_payments_cache_version', (string) time(), '', 'no');
+}
+register_activation_hook(__FILE__, 'opwc_activate');
 
 /**
  * Begins execution of the plugin.

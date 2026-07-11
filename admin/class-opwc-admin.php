@@ -23,8 +23,8 @@ class OPWC_Admin
 	{
 		// Only load plugin styles on OwnPay admin pages and WooCommerce payment settings.
 		$is_opwc_page = strpos($hook, 'opwc') !== false;
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check for conditional asset loading, no data processing.
-		$is_wc_ownpay_settings = ($hook === 'woocommerce_page_wc-settings' && isset($_GET['section']) && $_GET['section'] === 'ownpay');
+		$section = isset($_GET['section']) ? sanitize_key(wp_unslash($_GET['section'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only URL param used only to determine which assets to load; no data is processed.
+		$is_wc_ownpay_settings = ($hook === 'woocommerce_page_wc-settings' && $section === 'ownpay');
 
 		if (!$is_opwc_page && !$is_wc_ownpay_settings) {
 			return;
@@ -41,11 +41,16 @@ class OPWC_Admin
 
 	public function opwc_enqueue_scripts()
 	{
-		// Conditional check for WooCommerce OwnPay settings section — read-only routing checks, no data processing.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- These are read-only URL params used only for conditional script enqueueing, not for processing any form data.
-		if (isset($_GET['page']) && $_GET['page'] === 'wc-settings' && isset($_GET['section']) && $_GET['section'] === 'ownpay') {
+		$page    = isset($_GET['page'])    ? sanitize_key(wp_unslash($_GET['page']))    : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only URL param used only to determine which assets to load; no data is processed.
+		$section = isset($_GET['section']) ? sanitize_key(wp_unslash($_GET['section'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only URL param used only to determine which assets to load; no data is processed.
+
+		if ($page === 'wc-settings' && $section === 'ownpay') {
 			wp_enqueue_media();
-			wp_enqueue_script('opwc-admin-upload', plugin_dir_url(__FILE__) . 'js/opwc-admin-upload.js', ['jquery'], $this->version, false);
+			wp_enqueue_script('opwc-admin-upload', plugin_dir_url(__FILE__) . 'js/opwc-admin-upload.js', ['jquery'], $this->version, true);
+			wp_localize_script('opwc-admin-upload', 'opwcUploadI18n', array(
+				'mediaTitle'  => __('Select or Upload Payment Gateway Logo', 'ownpay-payment-gateway'),
+				'mediaButton' => __('Use this Image', 'ownpay-payment-gateway'),
+			));
 		}
 
 		$admin_scripts = $this->opwc_get_admin_scripts();
