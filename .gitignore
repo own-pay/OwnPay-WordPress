@@ -1,0 +1,12 @@
+skills/
+node_modules/
+php/
+phpcs/
+phpcs-standards/
+wp-test/
+wp-stubs.php
+.env
+download/
+tool-results/
+.clawhub/
+upload/
