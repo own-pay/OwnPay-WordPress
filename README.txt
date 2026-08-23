@@ -3,7 +3,7 @@ Contributors: ownpay
 Donate link: https://ownpay.org/donate
 Tags: ownpay, payment gateway, woocommerce, checkout, cards payment
 Requires at least: 5.1
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.0
 Requires Plugins: woocommerce
 Stable tag: 1.2.0

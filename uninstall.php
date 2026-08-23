@@ -16,13 +16,13 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 
 // Determine whether to remove data based on a site option.
 // WordPress.org guidelines require giving site owners the choice to keep data.
-$remove_data = get_option('opwc_remove_data_on_uninstall', false);
+$opwc_remove_data = get_option('opwc_remove_data_on_uninstall', false);
 
 if (defined('OPWC_REMOVE_ALL_DATA') && OPWC_REMOVE_ALL_DATA) {
-    $remove_data = true;
+    $opwc_remove_data = true;
 }
 
-if ($remove_data) {
+if ($opwc_remove_data) {
     // Remove the custom cache-busting option.
     delete_option('opwc_payments_cache_version');
 
