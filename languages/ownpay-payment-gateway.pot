@@ -2,7 +2,7 @@
 # This file is distributed under the same license as the OwnPay Payment Gateway plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: OwnPay Payment Gateway 1.0.0\n"
+"Project-Id-Version: OwnPay Payment Gateway 1.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ownpay-payment-gateway\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"

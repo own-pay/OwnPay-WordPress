@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name:     OwnPay Payment Gateway
- * Plugin URI:      https://github.com/own-pay/OwnPay-WordPress
+ * Plugin URI:      https://wordpress.org/plugins/ownpay-payment-gateway/
  * Description:     Accept card, bank transfer, and mobile banking payments in WooCommerce via OwnPay.
  * Author:          OwnPay
  * Author URI:      https://ownpay.org
- * Version:         1.1.0
+ * Version:         1.2.0
  * Requires at least: 5.1
  * Requires PHP:    8.0
  * Requires Plugins: woocommerce
@@ -22,7 +22,7 @@ if (!defined('WPINC')) die;
 /**
  * Current plugin version.
  */
-define('OPWC_VERSION', '1.0.0');
+define('OPWC_VERSION', '1.2.0');
 define('OPWC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('OPWC_ASSETS_DIR', plugin_dir_url(__FILE__) . 'assets/');
 
@@ -71,6 +71,17 @@ function opwc_activate()
     add_option('opwc_payments_cache_version', (string) time(), '', 'no');
 }
 register_activation_hook(__FILE__, 'opwc_activate');
+
+/**
+ * Plugin deactivation: remove the cache version option.
+ * This is a lightweight runtime cache key, not user data,
+ * so it is safe to remove on deactivation.
+ */
+function opwc_deactivate()
+{
+    delete_option('opwc_payments_cache_version');
+}
+register_deactivation_hook(__FILE__, 'opwc_deactivate');
 
 /**
  * Begins execution of the plugin.

@@ -3,10 +3,10 @@ Contributors: ownpay
 Donate link: https://ownpay.org/donate
 Tags: ownpay, payment gateway, woocommerce, checkout, cards payment
 Requires at least: 5.1
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.0
 Requires Plugins: woocommerce
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,9 +71,20 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 == Changelog ==
 
+= 1.2.0 =
+* Removed stale binary dashboard menu icon (196KB JPG) in favor of the existing SVG icon.
+* Added deactivation hook to clean up the runtime cache version option.
+* Fixed version constant mismatch: `OPWC_VERSION` now correctly reflects `1.2.0` instead of the stale `1.0.0` value.
+* Updated Plugin URI to point to the WordPress.org plugin directory listing instead of the GitHub repository.
+* Improved `getallheaders()` fallback to only iterate `HTTP_*` server variables along with `CONTENT_TYPE` and `CONTENT_LENGTH`, avoiding unnecessary iteration over all `$_SERVER` keys.
+* Removed redundant `strval()` wrappers around `sanitize_text_field()` calls where applicable.
+* Refactored self-hooking in class constructors: moved `add_action`/`add_filter` registrations from `__construct()` into dedicated `init()` methods called externally, following WordPress.org coding best practices. Affected classes: `OPWC_Payment`, `OPWC_Hooks`, `OPWC_Menu_Settings`, and `OPWC_Admin`.
+* Added `index.php` silence files to all subdirectories (`admin/css/`, `admin/js/`, `admin/partials/`, `admin/partials/views/`, `admin/partials/views/payment-list/`, `assets/`, `assets/js/`, `assets/logo/`, `languages/`) to prevent directory listing on servers.
+* Fixed fallback version string in `OPWC` class constructor to match the current release.
+* Expanded changelog entries for this release with specific technical details.
+
 = 1.1.0 =
-* Fix some bugs
+* Fixed some bugs
 
 = 1.0.0 =
 * Initial release of the OwnPay Payment Gateway plugin.
-
