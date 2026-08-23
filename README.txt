@@ -72,6 +72,8 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 == Changelog ==
 
 = 1.2.0 =
+* Removed stale binary dashboard menu icon (196KB JPG) in favor of the existing SVG icon.
+* Added deactivation hook to clean up the runtime cache version option.
 * Fixed version constant mismatch: `OPWC_VERSION` now correctly reflects `1.2.0` instead of the stale `1.0.0` value.
 * Updated Plugin URI to point to the WordPress.org plugin directory listing instead of the GitHub repository.
 * Improved `getallheaders()` fallback to only iterate `HTTP_*` server variables along with `CONTENT_TYPE` and `CONTENT_LENGTH`, avoiding unnecessary iteration over all `$_SERVER` keys.

@@ -73,6 +73,17 @@ function opwc_activate()
 register_activation_hook(__FILE__, 'opwc_activate');
 
 /**
+ * Plugin deactivation: remove the cache version option.
+ * This is a lightweight runtime cache key, not user data,
+ * so it is safe to remove on deactivation.
+ */
+function opwc_deactivate()
+{
+    delete_option('opwc_payments_cache_version');
+}
+register_deactivation_hook(__FILE__, 'opwc_deactivate');
+
+/**
  * Begins execution of the plugin.
  */
 function opwc_run_plugin()
