@@ -1,0 +1,112 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract plugin version
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=^Version:\s*)\d+\.\d+\.\d+' ownpay-payment-gateway.php | head -1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Plugin version: $VERSION"
+
+      - name: Check if tag already exists
+        id: check_tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${{ steps.version.outputs.tag }} already exists. Skipping release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${{ steps.version.outputs.tag }} does not exist. Proceeding with release."
+          fi
+
+      - name: Parse changelog from README.txt
+        id: changelog
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Extract the changelog section for this version from README.txt
+          # Matches "= x.y.z =" block until next "= x.y.z =" or "== " header
+          CHANGELOG=$(awk -v ver="= ${VERSION} =" '
+            $0 == ver { found=1; next }
+            found && /^= [0-9]+\.[0-9]+\.[0-9]+ =/ { exit }
+            found { print }
+          ' README.txt)
+
+          # Write to file for multi-line handling
+          echo "$CHANGELOG" > /tmp/changelog.txt
+          echo "Changelog for ${VERSION}:"
+          cat /tmp/changelog.txt
+
+      - name: Create plugin zip
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PLUGIN_SLUG="ownpay-payment-gateway"
+          ZIP_NAME="${PLUGIN_SLUG}.zip"
+
+          # Zip the plugin folder contents (repo root IS the plugin folder)
+          # Exclude: .git, .github, tests, node_modules, any dev-only files
+          zip -r "${ZIP_NAME}" . \
+            -x ".git/*" \
+            -x ".gitignore" \
+            -x ".github/*" \
+            -x "tests/*" \
+            -x "node_modules/*" \
+            -x "*.md" \
+            -x ".editorconfig" \
+            -x "phpstan*" \
+            -x "composer.*" \
+            -x "package*.json" \
+            -x ".phpunit*"
+
+          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
+          echo "Zip contents:"
+          unzip -l "${ZIP_NAME}"
+
+      - name: Create Git tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          CHANGELOG_FILE="/tmp/changelog.txt"
+
+          # Build release body with title and changelog
+          {
+            echo "## OwnPay Payment Gateway ${VERSION}"
+            echo ""
+            cat "$CHANGELOG_FILE"
+          } > /tmp/release-body.md
+
+          gh release create "$TAG" \
+            "${ZIP_NAME}" \
+            --title "v${VERSION}" \
+            --notes-file /tmp/release-body.md
+
+          echo "Release ${TAG} created successfully with ${ZIP_NAME} asset."
