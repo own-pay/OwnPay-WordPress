@@ -20,8 +20,8 @@ class OPWC_Payment extends WC_Payment_Gateway
     {
         $this->id = 'ownpay';
         $this->icon = plugins_url('../assets/logo/payment-method-logo.png', __FILE__);
-        $this->method_title = 'OwnPay';
-        $this->method_description = 'Accept payments via cards, bank transfer, and mobile banking using OwnPay.';
+        $this->method_title       = __('OwnPay', 'ownpay-payment-gateway');
+        $this->method_description = __('Accept payments via cards, bank transfer, and mobile banking using OwnPay.', 'ownpay-payment-gateway');
         $this->has_fields = false;
         $this->supports = array('products');
 
@@ -343,10 +343,10 @@ class OPWC_Payment extends WC_Payment_Gateway
             foreach ($_SERVER as $k => $v) {
                 if (strpos($k, 'HTTP_') === 0) {
                     $header_name = str_replace('_', '-', substr($k, 5));
-                    $headers[$header_name] = $v;
+                    $headers[$header_name] = wp_unslash($v);
                 } elseif ($k === 'CONTENT_TYPE' || $k === 'CONTENT_LENGTH') {
                     $header_name = str_replace('_', '-', $k);
-                    $headers[$header_name] = $v;
+                    $headers[$header_name] = wp_unslash($v);
                 }
             }
         }
@@ -646,7 +646,7 @@ class OPWC_Payment extends WC_Payment_Gateway
                 $discounted_subtotal = max(0, $cart->cart_contents_total - $cart->get_discount_total());
                 $fee = ($discounted_subtotal + $cart->get_shipping_total()) * ($fee_percentage / 100);
                 WC()->cart->add_fee(
-                    __('OwnPay Processing Fee', 'ownpay-payment-gateway') . ' (' . $fee_percentage . '%)',
+                    __('OwnPay Processing Fee', 'ownpay-payment-gateway') . ' (' . floatval($fee_percentage) . '%)',
                     $fee
                 );
             }

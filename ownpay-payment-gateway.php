@@ -5,7 +5,7 @@
  * Description:     Accept card, bank transfer, and mobile banking payments in WooCommerce via OwnPay.
  * Author:          OwnPay
  * Author URI:      https://ownpay.org
- * Version:         1.2.0
+ * Version:         1.3.0
  * Requires at least: 5.1
  * Requires PHP:    8.0
  * Requires Plugins: woocommerce
@@ -22,7 +22,7 @@ if (!defined('WPINC')) die;
 /**
  * Current plugin version.
  */
-define('OPWC_VERSION', '1.2.0');
+define('OPWC_VERSION', '1.3.0');
 define('OPWC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('OPWC_ASSETS_DIR', plugin_dir_url(__FILE__) . 'assets/');
 

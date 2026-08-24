@@ -41,7 +41,7 @@ if (!class_exists('OPWC_Menu_Settings')) {
         {
             $main_menu_title = 'OwnPay';
             $parent_slug = 'opwc';
-            $capability = 'manage_options';
+            $capability = 'manage_woocommerce';
 
             // Use the SVG URL directly — no filesystem read required.
             $icon_path = plugin_dir_path(__FILE__) . '../assets/logo/icon.svg';
