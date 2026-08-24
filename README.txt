@@ -71,6 +71,10 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 == Changelog ==
 
+= 1.3.2 =
+* Fixed cancel/failed redirect breaking for guest orders by replacing get_view_order_url() with guest-compatible pages.
+* Failed payments now redirect to Pay for Order page (retry). Cancelled payments redirect to Cart (WC standard behaviour).
+
 = 1.3.1 =
 * Fixed cancel/failed payment redirect landing on cart page instead of WooCommerce View Order page.
 * Replaced transient-based customer notice with WooCommerce session for reliable delivery across redirects.

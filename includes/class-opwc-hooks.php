@@ -235,8 +235,16 @@ class OPWC_Hooks
             WC()->session->set('opwc_redirect_notice', $status_param);
         }
 
-        // Redirect to the order's View Order page (standard WC behaviour for cancelled/failed orders)
-        $redirect_url = $order->get_view_order_url();
+        // Redirect to a guest-compatible page based on status.
+        // get_view_order_url() is NOT used because it requires login (breaks for guest orders).
+        if ($status_param === 'failed') {
+            // Pay for Order page — lets the customer retry payment immediately.
+            // Guest-compatible: URL includes the order key for authentication.
+            $redirect_url = $order->get_checkout_payment_url();
+        } else {
+            // Cart page — matches WooCommerce's own cancel_order() behaviour.
+            $redirect_url = wc_get_page_permalink('cart');
+        }
         if (empty($redirect_url)) {
             // Fallback: strip OwnPay params from current URL
             $redirect_url = home_url(add_query_arg(array(), $GLOBALS['wp']->request));
@@ -274,7 +282,7 @@ class OPWC_Hooks
             );
         } elseif ($notice_status === 'cancelled') {
             wc_add_notice(
-                __('Your payment was cancelled. You can place a new order anytime.', 'ownpay-payment-gateway'),
+                __('Your payment was cancelled.', 'ownpay-payment-gateway'),
                 'notice'
             );
         }
