@@ -142,7 +142,7 @@ class OPWC_Payment extends WC_Payment_Gateway
                 'desc_tip'    => true,
             ),
             'custom_logo' => array(
-                'title'       => __('Custom Gateway Logo', 'ownpay-payment-gateway'),
+                'title'       => __('OwnPay Gateway Logo', 'ownpay-payment-gateway'),
                 'type'        => 'image_upload',
                 'default'     => '',
                 'placeholder' => 'https://example.com/logo.png',
@@ -157,7 +157,7 @@ class OPWC_Payment extends WC_Payment_Gateway
                 'desc_tip'    => true,
             ),
             'api_url' => array(
-                'title' => __('OwnPay API Endpoint URL', 'ownpay-payment-gateway'),
+                'title' => __('OwnPay Base URL', 'ownpay-payment-gateway'),
                 'type' => 'text',
                 'default' => '',
                 'placeholder' => 'https://pay.ownpay.org',
@@ -180,7 +180,8 @@ class OPWC_Payment extends WC_Payment_Gateway
                     __('The shared secret used to verify incoming webhook signatures from OwnPay. You MUST configure this outbound Webhook URL in your OwnPay Merchant Dashboard: %1$s', 'ownpay-payment-gateway'),
                     '<br/><code>' . esc_url($webhook_url) . '</code>'
                 ),
-                'desc_tip'    => false,
+                'tooltip_text' => __('HMAC-SHA256 secret key used to verify that webhook callbacks are genuinely from OwnPay and have not been tampered with.', 'ownpay-payment-gateway'),
+                'desc_tip'    => true,
             ),
             'add_extra_fee' => array(
                 'title' => __('Add Extra Fee', 'ownpay-payment-gateway'),

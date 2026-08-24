@@ -71,16 +71,10 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 == Changelog ==
 
-= 1.3.2 =
-* Fixed cancel/failed redirect breaking for guest orders by replacing get_view_order_url() with guest-compatible pages.
-* Failed payments now redirect to Pay for Order page (retry). Cancelled payments redirect to Cart (WC standard behaviour).
-
-= 1.3.1 =
-* Fixed cancel/failed payment redirect landing on cart page instead of WooCommerce View Order page.
+= 1.3.0 =
+* Fixed cancel/failed payment redirect to use guest-compatible pages (Pay for Order for failed, Cart for cancelled).
 * Replaced transient-based customer notice with WooCommerce session for reliable delivery across redirects.
 * Fixed empty Gateway Transaction ID in redirect success order note by checking multiple API field name variants.
-
-= 1.3.0 =
 * Removed dead binary dashboard-menu-icon.jpg that was still in the repo.
 * Added server-side payment status verification and customer-facing notices for failed and cancelled payment redirects from OwnPay.
 * Extracted verify_payment_by_id() reusable method from sync_payment_status() to avoid code duplication.
@@ -90,6 +84,9 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 * Added floatval() cast to fee percentage in cart fee label.
 * Fixed WordPress Plugin Checker warnings: ordered i18n placeholders, nonce verification comments for redirect parameters.
 * Added automated GitHub Actions release workflow with version-tagged releases and plugin zip asset generation.
+* Made admin payment list page responsive on mobile devices.
+* Renamed settings labels: "OwnPay API Endpoint URL" to "OwnPay Base URL", "Custom Gateway Logo" to "OwnPay Gateway Logo".
+* Added info tooltip on Webhook Secret setting.
 
 = 1.2.0 =
 * Removed stale binary dashboard menu icon (196KB JPG) in favor of the existing SVG icon.
