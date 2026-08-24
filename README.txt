@@ -71,6 +71,11 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 == Changelog ==
 
+= 1.3.1 =
+* Fixed cancel/failed payment redirect landing on cart page instead of WooCommerce View Order page.
+* Replaced transient-based customer notice with WooCommerce session for reliable delivery across redirects.
+* Fixed empty Gateway Transaction ID in redirect success order note by checking multiple API field name variants.
+
 = 1.3.0 =
 * Removed dead binary dashboard-menu-icon.jpg that was still in the repo.
 * Added server-side payment status verification and customer-facing notices for failed and cancelled payment redirects from OwnPay.
