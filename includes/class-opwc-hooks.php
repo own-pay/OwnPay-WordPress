@@ -230,47 +230,42 @@ class OPWC_Hooks
             }
         }
 
-        // Set a one-time transient for the customer-facing notice
-        set_transient('opwc_redirect_notice_' . $order_id, $status_param, 120);
+        // Store notice status in WooCommerce session so it survives the redirect
+        if (function_exists('WC') && WC()->session) {
+            WC()->session->set('opwc_redirect_notice', $status_param);
+        }
 
-        // Redirect to the same page with OwnPay params stripped to prevent stale notices on refresh
-        $current_url = home_url(add_query_arg(array(), $GLOBALS['wp']->request));
-        $current_url = remove_query_arg(array('payment_id', 'status'), $current_url);
-        wp_safe_redirect($current_url);
+        // Redirect to the order's View Order page (standard WC behaviour for cancelled/failed orders)
+        $redirect_url = $order->get_view_order_url();
+        if (empty($redirect_url)) {
+            // Fallback: strip OwnPay params from current URL
+            $redirect_url = home_url(add_query_arg(array(), $GLOBALS['wp']->request));
+            $redirect_url = remove_query_arg(array('payment_id', 'status'), $redirect_url);
+        }
+        wp_safe_redirect($redirect_url);
         exit;
     }
 
     /**
      * Display a one-time customer notice after a failed or cancelled payment redirect.
      *
-     * Reads the transient set by handle_redirect_status() and renders
-     * the appropriate WooCommerce notice, then deletes the transient.
+     * Reads the session value set by handle_redirect_status() and renders
+     * the appropriate WooCommerce notice, then clears the session value.
      */
     public function show_redirect_notice()
     {
-        // Check all recent OwnPay redirect transients (scan last 5 minutes of order IDs is impractical,
-        // so we check the order_id from the cancel_order URL param if present)
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- order_id is read from WooCommerce's own cancel_order URL, which already carries a _wpnonce validated by WC core.
-        $order_id = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
-
-        // Also check the WooCommerce cancel_order flow which stores order info in the session
-        if (empty($order_id) && function_exists('WC') && WC()->session) {
-            $order_id = absint(WC()->session->get('order_awaiting_payment')) ?: 0;
-        }
-
-        if (empty($order_id)) {
+        if (!function_exists('WC') || !WC()->session) {
             return;
         }
 
-        $transient_key = 'opwc_redirect_notice_' . $order_id;
-        $notice_status = get_transient($transient_key);
+        $notice_status = WC()->session->get('opwc_redirect_notice');
 
         if (empty($notice_status)) {
             return;
         }
 
-        // Delete immediately so it only shows once
-        delete_transient($transient_key);
+        // Clear immediately so it only shows once
+        WC()->session->set('opwc_redirect_notice', null);
 
         if ($notice_status === 'failed') {
             wc_add_notice(
@@ -279,7 +274,7 @@ class OPWC_Hooks
             );
         } elseif ($notice_status === 'cancelled') {
             wc_add_notice(
-                __('Your payment was cancelled. Your cart has been restored.', 'ownpay-payment-gateway'),
+                __('Your payment was cancelled. You can place a new order anytime.', 'ownpay-payment-gateway'),
                 'notice'
             );
         }
