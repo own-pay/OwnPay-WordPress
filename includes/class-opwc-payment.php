@@ -520,22 +520,22 @@ class OPWC_Payment extends WC_Payment_Gateway
     }
 
     /**
-     * Synchronize payment status during synchronous customer redirects (fallback)
+     * Query the OwnPay API for a payment's current status.
+     *
+     * Returns a verified data array on success, or null on any failure.
+     *
+     * @param string $payment_id The OwnPay payment UUID.
+     * @param WC_Order $order The order to validate amount/currency against.
+     * @return array|null Verified payment data or null.
      */
-    public function sync_payment_status($order_id)
+    public function verify_payment_by_id($payment_id, $order)
     {
-        $order = wc_get_order($order_id);
-        if (!$order || $order->is_paid()) {
-            return;
-        }
-
-        $payment_id = $order->get_meta('_ownpay_payment_id', true);
-        if (empty($payment_id)) {
-            return;
+        if (empty($payment_id) || !$order) {
+            return null;
         }
 
         if (empty($this->api_url) || empty($this->api_key)) {
-            return;
+            return null;
         }
 
         $query_url = $this->api_url . '/api/v1/payments/' . rawurlencode($payment_id);
@@ -552,28 +552,25 @@ class OPWC_Payment extends WC_Payment_Gateway
         ));
 
         if (is_wp_error($response)) {
-            return;
+            return null;
         }
 
         $response_code = wp_remote_retrieve_response_code($response);
         if ($response_code !== 200) {
-            return;
+            return null;
         }
 
         $response_data = json_decode(wp_remote_retrieve_body($response), true);
         if (!isset($response_data['success']) || $response_data['success'] !== true) {
-            return;
+            return null;
         }
 
-        $data           = isset($response_data['data']) && is_array($response_data['data']) ? $response_data['data'] : array();
-        $status         = sanitize_key($data['status'] ?? '');
-        $trx_id         = sanitize_text_field($data['trx_id'] ?? '');
-        $gateway_trx_id = sanitize_text_field($data['gateway_trx_id'] ?? '');
+        $data = isset($response_data['data']) && is_array($response_data['data']) ? $response_data['data'] : array();
 
         $order_currency = strtoupper($order->get_currency());
         $api_currency   = strtoupper(sanitize_key($data['currency'] ?? ''));
         $order_total    = (float) $order->get_total();
-        $api_amount = isset($data['amount']) ? (float) $data['amount'] : -1.0;
+        $api_amount     = isset($data['amount']) ? (float) $data['amount'] : -1.0;
 
         if ($api_amount <= 0 || abs($api_amount - $order_total) > 0.01 || $api_currency !== $order_currency) {
             $order->add_order_note(sprintf(
@@ -584,11 +581,37 @@ class OPWC_Payment extends WC_Payment_Gateway
                 $api_amount >= 0 ? $api_amount : 'missing/invalid',
                 $api_currency ? $api_currency : 'missing/invalid'
             ));
+            return null;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Synchronize payment status during synchronous customer redirects (fallback)
+     */
+    public function sync_payment_status($order_id)
+    {
+        $order = wc_get_order($order_id);
+        if (!$order || $order->is_paid()) {
             return;
         }
 
+        $payment_id = $order->get_meta('_ownpay_payment_id', true);
+        if (empty($payment_id)) {
+            return;
+        }
+
+        $data = $this->verify_payment_by_id($payment_id, $order);
+        if (empty($data)) {
+            return;
+        }
+
+        $status         = sanitize_key($data['status'] ?? '');
+        $trx_id         = sanitize_text_field($data['trx_id'] ?? '');
+        $gateway_trx_id = sanitize_text_field($data['gateway_trx_id'] ?? '');
+
         if ($status === 'completed' || $status === 'paid' || $status === 'success') {
-            // All three variables were sanitized with sanitize_text_field() above.
             $fallback_trx_id = $gateway_trx_id ? $gateway_trx_id : ($trx_id ? $trx_id : $payment_id);
             $order->payment_complete($fallback_trx_id);
 
