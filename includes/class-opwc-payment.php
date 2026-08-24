@@ -611,6 +611,17 @@ class OPWC_Payment extends WC_Payment_Gateway
         $trx_id         = sanitize_text_field($data['trx_id'] ?? '');
         $gateway_trx_id = sanitize_text_field($data['gateway_trx_id'] ?? '');
 
+        // API GET response may use different field names for gateway transaction ID
+        if (empty($gateway_trx_id)) {
+            $gateway_trx_id = sanitize_text_field($data['gateway_transaction_id'] ?? '');
+        }
+        if (empty($gateway_trx_id) && isset($data['gateway']) && is_array($data['gateway'])) {
+            $gateway_trx_id = sanitize_text_field($data['gateway']['gateway_trx_id'] ?? '');
+            if (empty($gateway_trx_id)) {
+                $gateway_trx_id = sanitize_text_field($data['gateway']['gateway_transaction_id'] ?? '');
+            }
+        }
+
         if ($status === 'completed' || $status === 'paid' || $status === 'success') {
             $fallback_trx_id = $gateway_trx_id ? $gateway_trx_id : ($trx_id ? $trx_id : $payment_id);
             $order->payment_complete($fallback_trx_id);
@@ -621,12 +632,20 @@ class OPWC_Payment extends WC_Payment_Gateway
                 $order->update_status('processing');
             }
 
-            $order->add_order_note(sprintf(
-                /* translators: 1: OwnPay internal transaction ID. 2: Downstream gateway transaction ID. */
-                __('OwnPay Redirect: Payment verified. Transaction ID: %1$s. Gateway Transaction: %2$s.', 'ownpay-payment-gateway'),
-                $trx_id,
-                $gateway_trx_id
-            ));
+            if (!empty($gateway_trx_id)) {
+                $order->add_order_note(sprintf(
+                    /* translators: 1: OwnPay internal transaction ID. 2: Downstream gateway transaction ID. */
+                    __('OwnPay Redirect: Payment verified. Transaction ID: %1$s. Gateway Transaction: %2$s.', 'ownpay-payment-gateway'),
+                    $trx_id,
+                    $gateway_trx_id
+                ));
+            } else {
+                $order->add_order_note(sprintf(
+                    /* translators: %s: OwnPay internal transaction ID. */
+                    __('OwnPay Redirect: Payment verified. Transaction ID: %s.', 'ownpay-payment-gateway'),
+                    $trx_id
+                ));
+            }
         }
     }
 
