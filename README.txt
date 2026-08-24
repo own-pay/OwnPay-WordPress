@@ -6,7 +6,7 @@ Requires at least: 5.1
 Tested up to: 7.1
 Requires PHP: 8.0
 Requires Plugins: woocommerce
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,17 @@ controlled by the site administrator. For OwnPay's privacy policy, visit https:/
 This plugin communicates with the OwnPay payment API (configurable endpoint) to process transactions. No customer data is sent to OwnPay without the customer initiating a payment. Transaction details are stored in WooCommerce order meta. For OwnPay's privacy policy, visit https://ownpay.org/privacy.
 
 == Changelog ==
+
+= 1.3.0 =
+* Removed dead binary dashboard-menu-icon.jpg that was still in the repo.
+* Added server-side payment status verification and customer-facing notices for failed and cancelled payment redirects from OwnPay.
+* Extracted verify_payment_by_id() reusable method from sync_payment_status() to avoid code duplication.
+* Added wp_unslash() to $_SERVER header fallback values in webhook handler.
+* Wrapped method_title and method_description in __() for translation support.
+* Changed admin menu capability from manage_options to manage_woocommerce for consistency with WooCommerce extension guidelines.
+* Added floatval() cast to fee percentage in cart fee label.
+* Fixed WordPress Plugin Checker warnings: ordered i18n placeholders, nonce verification comments for redirect parameters.
+* Added automated GitHub Actions release workflow with version-tagged releases and plugin zip asset generation.
 
 = 1.2.0 =
 * Removed stale binary dashboard menu icon (196KB JPG) in favor of the existing SVG icon.
