@@ -54,6 +54,9 @@ class OPWC_Payment extends WC_Payment_Gateway
 
         // Thank you page status synchronization
         add_action('woocommerce_thankyou_' . $this->id, [$this, 'sync_payment_status']);
+
+        // Custom render for webhook_secret field (visible description + copy button)
+        add_action('woocommerce_admin_field_opwc_webhook_secret', [$this, 'render_webhook_secret_field']);
     }
 
     /**
@@ -173,15 +176,11 @@ class OPWC_Payment extends WC_Payment_Gateway
             ),
             'webhook_secret' => array(
                 'title' => __('Webhook Secret', 'ownpay-payment-gateway'),
-                'type' => 'password',
+                'type' => 'opwc_webhook_secret',
                 'default' => '',
-                'description' => sprintf(
-                    /* translators: %1$s: Webhook URL wrapped in a code element. */
-                    __('The shared secret used to verify incoming webhook signatures from OwnPay. You MUST configure this outbound Webhook URL in your OwnPay Merchant Dashboard: %1$s', 'ownpay-payment-gateway'),
-                    '<br/><code>' . esc_url($webhook_url) . '</code>'
-                ),
-                'tooltip_text' => __('HMAC-SHA256 secret key used to verify that webhook callbacks are genuinely from OwnPay and have not been tampered with.', 'ownpay-payment-gateway'),
                 'desc_tip'    => true,
+                'tooltip_text' => __('HMAC-SHA256 secret key used to verify that webhook callbacks are genuinely from OwnPay and have not been tampered with.', 'ownpay-payment-gateway'),
+                'opwc_webhook_url' => $webhook_url,
             ),
             'add_extra_fee' => array(
                 'title' => __('Add Extra Fee', 'ownpay-payment-gateway'),
@@ -679,5 +678,55 @@ class OPWC_Payment extends WC_Payment_Gateway
     public function validate_image_upload_field($key, $value)
     {
         return is_null($value) ? '' : esc_url_raw(trim($value));
+    }
+
+    /**
+     * Custom render for the webhook_secret field.
+     *
+     * Displays the password input with a WC tooltip (?), an always-visible
+     * description containing the webhook URL, and a click-to-copy button.
+     */
+    public function render_webhook_secret_field($value, $data)
+    {
+        $field_key   = 'webhook_secret';
+        $option_value = $this->get_option($field_key);
+        $webhook_url  = !empty($data['opwc_webhook_url']) ? esc_url($data['opwc_webhook_url']) : '';
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.urlencode_urlencode -- rawurlencode is used here for a data attribute value, not for a redirect.
+        $copy_target = $webhook_url ? 'data-opwc-copy-url="' . esc_attr($webhook_url) . '"' : '';
+        ?>
+        <tr valign="top">
+            <th scope="row" class="titledesc">
+                <label for="woocommerce_ownpay_<?php echo esc_attr($field_key); ?>">
+                    <?php echo wp_kses_post($data['title']); ?>
+                </label>
+                <?php echo $this->get_tooltip_html($data); ?>
+            </th>
+            <td class="forminp">
+                <fieldset>
+                    <legend class="screen-reader-text"><span><?php echo esc_html($data['title']); ?></span></legend>
+                    <input class="input-text regular-input" type="password"
+                           name="woocommerce_ownpay_<?php echo esc_attr($field_key); ?>"
+                           id="woocommerce_ownpay_<?php echo esc_attr($field_key); ?>"
+                           value="<?php echo esc_attr($option_value); ?>"
+                           autocomplete="new-password" />
+                    <?php if ($webhook_url) : ?>
+                        <p class="description" style="margin-top:8px;">
+                            <?php
+                            echo esc_html__('The shared secret used to verify incoming webhook signatures from OwnPay. You MUST configure this outbound Webhook URL in your OwnPay Merchant Dashboard:', 'ownpay-payment-gateway');
+                            ?>
+                        </p>
+                        <p class="description opwc-webhook-url-row" style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
+                            <code id="opwc-webhook-url-display" style="font-size:12px;word-break:break-all;user-select:all;"><?php echo esc_html($webhook_url); ?></code>
+                            <button type="button" class="button button-small opwc-copy-webhook-url" <?php echo $copy_target; ?> style="flex-shrink:0;">
+                                <span class="dashicons dashicons-clipboard" style="font-size:16px;line-height:1.4;vertical-align:middle;margin-right:2px;"></span>
+                                <?php esc_html_e('Copy', 'ownpay-payment-gateway'); ?>
+                            </button>
+                        </p>
+                    <?php endif; ?>
+                </fieldset>
+            </td>
+        </tr>
+        <?php
     }
 }

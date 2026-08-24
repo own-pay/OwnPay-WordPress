@@ -57,6 +57,7 @@ class OPWC_Admin
             wp_localize_script('opwc-admin-upload', 'opwcUploadI18n', array(
                 'mediaTitle'  => __('Select or Upload Payment Gateway Logo', 'ownpay-payment-gateway'),
                 'mediaButton' => __('Use this Image', 'ownpay-payment-gateway'),
+                'copyLabel'  => __('Copy', 'ownpay-payment-gateway'),
             ));
         }
 

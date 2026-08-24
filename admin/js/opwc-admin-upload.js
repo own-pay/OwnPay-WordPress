@@ -35,3 +35,40 @@ jQuery(document).ready(function ($) {
         $('#' + inputId + '-preview').attr('src', '').hide();
     });
 });
+
+// Webhook URL copy button
+$(document).on('click', '.opwc-copy-webhook-url', function (e) {
+    e.preventDefault();
+    var url = $(this).data('opwc-copy-url');
+    if (!url) return;
+
+    var $btn = $(this);
+    var $icon = $btn.find('.dashicons');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () {
+            $icon.removeClass('dashicons-clipboard').addClass('dashicons-yes-alt');
+            $btn.contents().last().replaceWith('Copied!');
+            setTimeout(function () {
+                $icon.removeClass('dashicons-yes-alt').addClass('dashicons-clipboard');
+                $btn.contents().last().replaceWith(opwcUploadI18n.copyLabel || 'Copy');
+            }, 2000);
+        });
+    } else {
+        // Fallback for older browsers
+        var ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        $icon.removeClass('dashicons-clipboard').addClass('dashicons-yes-alt');
+        $btn.contents().last().replaceWith('Copied!');
+        setTimeout(function () {
+            $icon.removeClass('dashicons-yes-alt').addClass('dashicons-clipboard');
+            $btn.contents().last().replaceWith('Copy');
+        }, 2000);
+    }
+});
