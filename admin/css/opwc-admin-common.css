@@ -162,3 +162,85 @@
     margin: 0 !important;
     display: block;
 }
+
+
+/* ============================================
+   Mobile Responsive Styles
+   ============================================ */
+@media screen and (max-width: 782px) {
+    /* Table: make it scrollable horizontally */
+    .opwc-admin-page .table-header .filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .opwc-admin-page .table-header .filter-actions select,
+    .opwc-admin-page .table-header .filter-actions .button {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Wrap the table in a scroll container */
+    .opwc-admin-page .payment-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Force table cells to nowrap so horizontal scroll works */
+    .opwc-admin-page table.wp-list-table th,
+    .opwc-admin-page table.wp-list-table td {
+        white-space: nowrap;
+        font-size: 13px;
+        padding: 8px 10px;
+    }
+
+    /* Modal: full width on mobile */
+    .opwc-modal {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .opwc-modal-body .opwc-modal-columns {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .opwc-modal-column {
+        width: 100%;
+    }
+
+    .opwc-modal-body textarea {
+        font-size: 11px;
+    }
+
+    /* Pagination: stack links */
+    .opwc-admin-page .pagination .page-numbers {
+        display: inline-block;
+        margin: 2px;
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+
+    .opwc-admin-page .footer-actions {
+        text-align: center;
+    }
+}
+
+/* Extra small screens */
+@media screen and (max-width: 480px) {
+    .opwc-admin-page .table-header .filter-actions select {
+        font-size: 14px;
+    }
+
+    .opwc-modal-header p {
+        font-size: 14px;
+    }
+
+    .opwc-modal-close {
+        font-size: 20px;
+        width: 28px;
+        height: 28px;
+    }
+}
