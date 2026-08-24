@@ -23,6 +23,10 @@ class OPWC_Hooks
         add_action('wp_enqueue_scripts', [$this, 'trigger_recalculation_on_payment_method_change']);
         add_action('woocommerce_order_details_after_order_table', [$this, 'add_ownpay_details_to_order_table'], 10, 1);
 
+        // Handle OwnPay redirect status (cancel/failed) from URL params
+        add_action('template_redirect', [$this, 'handle_redirect_status']);
+        add_action('wp_loaded', [$this, 'show_redirect_notice']);
+
         // Cache invalidation hooks
         add_action('woocommerce_update_order', [$this, 'clear_payments_cache']);
         add_action('woocommerce_new_order', [$this, 'clear_payments_cache']);
@@ -149,6 +153,132 @@ class OPWC_Hooks
 
                 echo '</table>';
             }
+        }
+    }
+
+    /**
+     * Handle OwnPay redirect status parameters on return from payment page.
+     *
+     * When OwnPay redirects back after a cancelled or failed payment, the URL
+     * contains payment_id and status query parameters. This method verifies the
+     * status server-side, updates the order, sets a one-time transient for the
+     * customer notice, and redirects to the same page without the OwnPay params.
+     */
+    public function handle_redirect_status()
+    {
+        $payment_id = isset($_GET['payment_id']) ? sanitize_text_field(wp_unslash($_GET['payment_id'])) : '';
+        $status_param = isset($_GET['status']) ? sanitize_key($_GET['status']) : '';
+
+        // Only act when both OwnPay params are present
+        if (empty($payment_id) || empty($status_param)) {
+            return;
+        }
+
+        // Only handle failed or cancelled statuses
+        if (!in_array($status_param, array('failed', 'cancelled'), true)) {
+            return;
+        }
+
+        // Find the order by payment_id meta
+        $orders = wc_get_orders(array(
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- No HPOS-native alternative exists for looking up orders by custom meta value via wc_get_orders().
+            'meta_query' => array(
+                array(
+                    'key'   => '_ownpay_payment_id',
+                    'value' => $payment_id,
+                ),
+            ),
+            'limit' => 1,
+        ));
+
+        if (empty($orders)) {
+            return;
+        }
+
+        $order = $orders[0];
+        if ($order->get_payment_method() !== 'ownpay') {
+            return;
+        }
+
+        $order_id = $order->get_id();
+
+        // Verify status server-side if order is not yet paid
+        if (!$order->is_paid()) {
+            $gateways = WC()->payment_gateways()->payment_gateways();
+            if (isset($gateways['ownpay']) && method_exists($gateways['ownpay'], 'verify_payment_by_id')) {
+                $data = $gateways['ownpay']->verify_payment_by_id($payment_id, $order);
+
+                if (!empty($data)) {
+                    $verified_status = sanitize_key($data['status'] ?? '');
+
+                    if ($verified_status === 'failed' && !$order->is_paid()) {
+                        $order->update_status('failed', __('OwnPay Redirect: Payment failed.', 'ownpay-payment-gateway'));
+                    } elseif ($verified_status === 'cancelled' && !$order->is_paid()) {
+                        $order->update_status('cancelled', __('OwnPay Redirect: Payment cancelled.', 'ownpay-payment-gateway'));
+                    }
+                } else {
+                    // API verification failed; still show notice but do not change order status
+                    $order->add_order_note(sprintf(
+                        /* translators: %s: OwnPay payment ID. */
+                        __('OwnPay Redirect: Could not verify payment %s status via API. Customer was redirected with status: %s.', 'ownpay-payment-gateway'),
+                        $payment_id,
+                        $status_param
+                    ));
+                }
+            }
+        }
+
+        // Set a one-time transient for the customer-facing notice
+        set_transient('opwc_redirect_notice_' . $order_id, $status_param, 120);
+
+        // Redirect to the same page with OwnPay params stripped to prevent stale notices on refresh
+        $current_url = home_url(add_query_arg(array(), $GLOBALS['wp']->request));
+        $current_url = remove_query_arg(array('payment_id', 'status'), $current_url);
+        wp_safe_redirect($current_url);
+        exit;
+    }
+
+    /**
+     * Display a one-time customer notice after a failed or cancelled payment redirect.
+     *
+     * Reads the transient set by handle_redirect_status() and renders
+     * the appropriate WooCommerce notice, then deletes the transient.
+     */
+    public function show_redirect_notice()
+    {
+        // Check all recent OwnPay redirect transients (scan last 5 minutes of order IDs is impractical,
+        // so we check the order_id from the cancel_order URL param if present)
+        $order_id = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
+
+        // Also check the WooCommerce cancel_order flow which stores order info in the session
+        if (empty($order_id) && function_exists('WC') && WC()->session) {
+            $order_id = absint(WC()->session->get('order_awaiting_payment')) ?: 0;
+        }
+
+        if (empty($order_id)) {
+            return;
+        }
+
+        $transient_key = 'opwc_redirect_notice_' . $order_id;
+        $notice_status = get_transient($transient_key);
+
+        if (empty($notice_status)) {
+            return;
+        }
+
+        // Delete immediately so it only shows once
+        delete_transient($transient_key);
+
+        if ($notice_status === 'failed') {
+            wc_add_notice(
+                __('Your payment has failed. Please try again or contact support if the problem persists.', 'ownpay-payment-gateway'),
+                'error'
+            );
+        } elseif ($notice_status === 'cancelled') {
+            wc_add_notice(
+                __('Your payment was cancelled. Your cart has been restored.', 'ownpay-payment-gateway'),
+                'notice'
+            );
         }
     }
 
