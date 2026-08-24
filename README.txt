@@ -105,3 +105,4 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 = 1.0.0 =
 * Initial release of the OwnPay Payment Gateway plugin.
+
