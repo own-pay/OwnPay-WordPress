@@ -700,7 +700,7 @@ class OPWC_Payment extends WC_Payment_Gateway
                 <label for="woocommerce_ownpay_<?php echo esc_attr($field_key); ?>">
                     <?php echo wp_kses_post($data['title']); ?>
                 </label>
-                <?php echo $this->get_tooltip_html($data); ?>
+                <?php echo $this->get_tooltip_html($data); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WooCommerce core method returns pre-escaped HTML. ?>
             </th>
             <td class="forminp">
                 <fieldset>
@@ -718,7 +718,7 @@ class OPWC_Payment extends WC_Payment_Gateway
                         </p>
                         <p class="description opwc-webhook-url-row" style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
                             <code id="opwc-webhook-url-display" style="font-size:12px;word-break:break-all;user-select:all;"><?php echo esc_html($webhook_url); ?></code>
-                            <button type="button" class="button button-small opwc-copy-webhook-url" <?php echo $copy_target; ?> style="flex-shrink:0;">
+                            <button type="button" class="button button-small opwc-copy-webhook-url" <?php echo $copy_target; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Value is escaped with esc_attr() when $copy_target is built above. ?> style="flex-shrink:0;">
                                 <span class="dashicons dashicons-clipboard" style="font-size:16px;line-height:1.4;vertical-align:middle;margin-right:2px;"></span>
                                 <?php esc_html_e('Copy', 'ownpay-payment-gateway'); ?>
                             </button>
