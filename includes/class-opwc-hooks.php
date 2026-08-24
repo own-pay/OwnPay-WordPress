@@ -166,7 +166,9 @@ class OPWC_Hooks
      */
     public function handle_redirect_status()
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- GET params originate from OwnPay server redirect, not from a form submission. No nonce is available or applicable.
         $payment_id = isset($_GET['payment_id']) ? sanitize_text_field(wp_unslash($_GET['payment_id'])) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same redirect source as above.
         $status_param = isset($_GET['status']) ? sanitize_key($_GET['status']) : '';
 
         // Only act when both OwnPay params are present
@@ -219,8 +221,8 @@ class OPWC_Hooks
                 } else {
                     // API verification failed; still show notice but do not change order status
                     $order->add_order_note(sprintf(
-                        /* translators: %s: OwnPay payment ID. */
-                        __('OwnPay Redirect: Could not verify payment %s status via API. Customer was redirected with status: %s.', 'ownpay-payment-gateway'),
+                        /* translators: 1: OwnPay payment ID. 2: Redirect status. */
+                        __('OwnPay Redirect: Could not verify payment %1$s status via API. Customer was redirected with status: %2$s.', 'ownpay-payment-gateway'),
                         $payment_id,
                         $status_param
                     ));
@@ -248,6 +250,7 @@ class OPWC_Hooks
     {
         // Check all recent OwnPay redirect transients (scan last 5 minutes of order IDs is impractical,
         // so we check the order_id from the cancel_order URL param if present)
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- order_id is read from WooCommerce's own cancel_order URL, which already carries a _wpnonce validated by WC core.
         $order_id = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
 
         // Also check the WooCommerce cancel_order flow which stores order info in the session
