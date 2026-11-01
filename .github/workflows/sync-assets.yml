@@ -10,6 +10,9 @@ on:
       - 'screenshots/**'
       - 'readme.txt'
 
+permissions:
+  contents: read
+
 jobs:
   assets:
     name: Push assets + readme to WordPress.org
