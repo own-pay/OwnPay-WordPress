@@ -1,0 +1,56 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  checks:
+    name: Lint, version consistency, Plugin Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+
+      - name: PHP syntax check
+        run: |
+          find . -name "*.php" \
+            -not -path "./.git/*" \
+            -not -path "./vendor/*" \
+            -print0 | xargs -0 -n1 php -l
+
+      - name: Verify version consistency
+        run: |
+          PLUGIN_VER=$(sed -n "s/.*Version:[[:space:]]*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" ownpay-payment-gateway.php | head -1)
+          DEFINE_VER=$(sed -n "s/.*define('OPWC_VERSION', '\([0-9.]*\)').*/\1/p" ownpay-payment-gateway.php | head -1)
+          README_VER=$(sed -n "s/^Stable tag: *//p" readme.txt | head -1)
+          REQ_HEADER=$(sed -n "s/.*Requires at least:[[:space:]]*\([0-9.]*\).*/\1/p" ownpay-payment-gateway.php | head -1)
+          REQ_README=$(sed -n "s/^Requires at least: *//p" readme.txt | head -1)
+
+          echo "Plugin header Version : $PLUGIN_VER"
+          echo "OPWC_VERSION constant  : $DEFINE_VER"
+          echo "readme.txt Stable tag  : $README_VER"
+          echo "Plugin header Requires : $REQ_HEADER"
+          echo "readme.txt Requires    : $REQ_README"
+
+          FAIL=0
+          if [ "$PLUGIN_VER" != "$README_VER" ] || [ "$PLUGIN_VER" != "$DEFINE_VER" ]; then
+            echo "::error::Version mismatch: header=$PLUGIN_VER, OPWC_VERSION=$DEFINE_VER, readme Stable tag=$README_VER"
+            FAIL=1
+          fi
+          if [ "$REQ_HEADER" != "$REQ_README" ]; then
+            echo "::error::'Requires at least' mismatch: header=$REQ_HEADER, readme=$REQ_README"
+            FAIL=1
+          fi
+          exit $FAIL
+
+      - name: WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          exclude-directories: '.github,screenshots'

@@ -1,0 +1,28 @@
+name: Deploy to WordPress.org
+
+# Fires right after release.yml pushes a "v*" tag on merge to main.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    name: Push tag to WordPress.org SVN
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve plugin version (strip leading "v")
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: WordPress Plugin Deploy
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: ownpay-payment-gateway
+          VERSION: ${{ steps.version.outputs.version }}
+          ASSETS_DIR: screenshots
