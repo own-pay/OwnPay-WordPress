@@ -53,4 +53,11 @@ jobs:
       - name: WordPress Plugin Check
         uses: wordpress/plugin-check-action@v1
         with:
+          # The repo is named "OwnPay-WordPress" but the WordPress.org slug
+          # (and Text Domain header) is "ownpay-payment-gateway" — without
+          # this the action infers the slug from the repo name and every
+          # translation call is flagged as a false-positive text-domain
+          # mismatch.
+          slug: 'ownpay-payment-gateway'
           exclude-directories: '.github,screenshots'
+          exclude-files: '.distignore'
