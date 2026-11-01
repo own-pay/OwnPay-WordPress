@@ -1,8 +1,8 @@
 === OwnPay Payment Gateway ===
 Contributors: ownpay
 Donate link: https://ownpay.org/donate
-Tags: ownpay, payment gateway, woocommerce, checkout, cards payment
-Requires at least: 5.1
+Tags: ownpay, woocommerce, payment gateway, credit card, checkout
+Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
 Requires Plugins: woocommerce
@@ -26,9 +26,9 @@ OwnPay Payment Gateway is the official WooCommerce integration for OwnPay paymen
 * Easy to read payment logs with raw API response payload view.
 
 ### Benefits:
-– **Unified Checkout**: Pay using multiple payment methods on a single white-labeled endpoint.
-– **Secure Transactions**: Protect your store and customers with HMAC signed verification callbacks.
-– **Responsive & Fast**: Designed to load efficiently on both desktop and mobile screens.
+* **Unified Checkout**: Pay using multiple payment methods on a single white-labeled endpoint.
+* **Secure Transactions**: Protect your store and customers with HMAC signed verification callbacks.
+* **Responsive & Fast**: Designed to load efficiently on both desktop and mobile screens.
 
 == Installation ==
 
@@ -71,7 +71,8 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 == Upgrade Notice ==
 
-Nothing Special
+= 1.3.0 =
+Fixes failed and cancelled payment redirects for guest customers. Recommended for all users.
 
 == Changelog ==
 
