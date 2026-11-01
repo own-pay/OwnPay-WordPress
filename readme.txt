@@ -1,8 +1,8 @@
 === OwnPay Payment Gateway ===
 Contributors: ownpay
 Donate link: https://ownpay.org/donate
-Tags: ownpay, payment gateway, woocommerce, checkout, cards payment
-Requires at least: 5.1
+Tags: ownpay, woocommerce, payment gateway, credit card, checkout
+Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
 Requires Plugins: woocommerce
@@ -26,9 +26,9 @@ OwnPay Payment Gateway is the official WooCommerce integration for OwnPay paymen
 * Easy to read payment logs with raw API response payload view.
 
 ### Benefits:
-- **Unified Checkout**: Pay using multiple payment methods on a single white-labeled endpoint.
-- **Secure Transactions**: Protect your store and customers with HMAC signed verification callbacks.
-- **Responsive & Fast**: Designed to load efficiently on both desktop and mobile screens.
+* **Unified Checkout**: Pay using multiple payment methods on a single white-labeled endpoint.
+* **Secure Transactions**: Protect your store and customers with HMAC signed verification callbacks.
+* **Responsive & Fast**: Designed to load efficiently on both desktop and mobile screens.
 
 == Installation ==
 
@@ -53,7 +53,7 @@ Yes! Input any image URL under the "Custom Gateway Logo URL" option in the payme
 
 == External Services ==
 
-This plugin sends payment data to your OwnPay gateway installation - a self-hosted or
+This plugin sends payment data to your OwnPay gateway installation – a self-hosted or
 managed payment server whose URL you configure in WooCommerce > Settings > Payments > OwnPay.
 
 Data sent to your configured endpoint when a customer initiates a checkout:
@@ -68,6 +68,11 @@ controlled by the site administrator. For OwnPay's privacy policy, visit https:/
 == Privacy ==
 
 This plugin communicates with the OwnPay payment API (configurable endpoint) to process transactions. No customer data is sent to OwnPay without the customer initiating a payment. Transaction details are stored in WooCommerce order meta. For OwnPay's privacy policy, visit https://ownpay.org/privacy.
+
+== Upgrade Notice ==
+
+= 1.3.0 =
+Fixes failed and cancelled payment redirects for guest customers. Recommended for all users.
 
 == Changelog ==
 
