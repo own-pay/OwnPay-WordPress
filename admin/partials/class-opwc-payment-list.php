@@ -68,7 +68,10 @@ class OPWC_Payment_List
         // Verify nonce if filter parameters are present
         if (isset($_GET['key']) || isset($_GET['value'])) {
             $nonce = isset($_GET['_opwc_nonce']) ? sanitize_text_field(wp_unslash($_GET['_opwc_nonce'])) : '';
-            if (!wp_verify_nonce($nonce, 'opwc_filter_nonce')) {
+            if (empty($nonce) && isset($_GET['_czpwc_nonce'])) {
+                $nonce = sanitize_text_field(wp_unslash($_GET['_czpwc_nonce']));
+            }
+            if (!wp_verify_nonce($nonce, 'opwc_filter_nonce') && !wp_verify_nonce($nonce, 'czpwc_filter_nonce')) {
                 // Invalid or missing nonce — return empty filters (no filtering applied)
                 return $filters;
             }

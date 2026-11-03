@@ -31,7 +31,7 @@ class OPWC_Admin
         // Only load plugin styles on OwnPay admin pages and WooCommerce payment settings.
         $is_opwc_page = strpos($hook, 'opwc') !== false;
         $section = isset($_GET['section']) ? sanitize_key(wp_unslash($_GET['section'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only URL param used only to determine which assets to load; no data is processed.
-        $is_wc_ownpay_settings = ($hook === 'woocommerce_page_wc-settings' && $section === 'ownpay');
+        $is_wc_ownpay_settings = ($hook === 'woocommerce_page_wc-settings' && ($section === 'ownpay' || $section === 'czpay'));
 
         if (!$is_opwc_page && !$is_wc_ownpay_settings) {
             return;
@@ -51,7 +51,7 @@ class OPWC_Admin
         $page    = isset($_GET['page'])    ? sanitize_key(wp_unslash($_GET['page']))    : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only URL param used only to determine which assets to load; no data is processed.
         $section = isset($_GET['section']) ? sanitize_key(wp_unslash($_GET['section'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only URL param used only to determine which assets to load; no data is processed.
 
-        if ($page === 'wc-settings' && $section === 'ownpay') {
+        if ($page === 'wc-settings' && ($section === 'ownpay' || $section === 'czpay')) {
             wp_enqueue_media();
             wp_enqueue_script('opwc-admin-upload', plugin_dir_url(__FILE__) . 'js/opwc-admin-upload.js', ['jquery'], $this->version, true);
             wp_localize_script('opwc-admin-upload', 'opwcUploadI18n', array(

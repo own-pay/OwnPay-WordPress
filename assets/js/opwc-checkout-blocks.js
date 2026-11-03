@@ -16,6 +16,9 @@
 
 	// Data passed from OPWC_Blocks::get_payment_method_data()
 	var settings = getSetting( 'ownpay_data', {} );
+       if ( ! settings || Object.keys( settings ).length === 0 ) {
+               settings = getSetting( 'czpay_data', {} );
+       }
 
 	var title       = decodeEntities( settings.title       || 'OwnPay Payment' );
 	var description = decodeEntities( settings.description || '' );
@@ -31,7 +34,7 @@
 		return createElement( 'img', {
 			src:   iconUrl,
 			alt:   title,
-			style: { maxHeight: '24px', marginLeft: '6px', verticalAlign: 'middle' },
+			style: { maxHeight: '24px', maxWidth: '100px', width: 'auto', height: 'auto', marginLeft: '6px', verticalAlign: 'middle', display: 'inline-block' },
 		} );
 	}
 

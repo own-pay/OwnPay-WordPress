@@ -23,7 +23,7 @@ function opwc_get_payments_details($args = [], $filters = [])
 	// Merge caller-supplied args first so limit/offset from the controller are respected.
 	// Only fall back to defaults for keys the caller did not provide.
 	$defaults = array(
-		'payment_method' => 'ownpay',
+		'payment_method' => ['ownpay', 'czpay'],
 		'limit'          => 10,
 		'orderby'        => 'date',
 		'order'          => 'DESC',
@@ -103,7 +103,7 @@ function opwc_get_all_payments_count($filters = [])
 	// Use limit:-1 with return:ids so WooCommerce returns only an array of integers —
 	// no WC_Order objects are hydrated, making this an efficient count query.
 	$args = array(
-		'payment_method' => 'ownpay',
+		'payment_method' => ['ownpay', 'czpay'],
 		'limit'          => -1,
 		'return'         => 'ids',
 	);
@@ -125,6 +125,9 @@ function opwc_get_all_payments_count($filters = [])
 function opwc_get_cache_version()
 {
 	$version = get_option('opwc_payments_cache_version', '');
+	if (empty($version)) {
+		$version = get_option('czpwc_payments_cache_version', '');
+	}
 	if (empty($version)) {
 		// Fallback for edge cases (e.g. pre-activation state); do not write from here.
 		$version = '1';
