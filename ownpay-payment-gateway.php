@@ -6,7 +6,7 @@
  * Author:          OwnPay
  * Author URI:      https://ownpay.org
  * Version:         1.3.0
- * Requires at least: 5.1
+ * Requires at least: 6.5
  * Requires PHP:    8.0
  * Requires Plugins: woocommerce
  * License:         GPL-2.0-or-later

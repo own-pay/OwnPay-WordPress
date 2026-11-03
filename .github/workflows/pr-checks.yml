@@ -1,0 +1,116 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, version consistency, Plugin Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: PHP syntax check
+        run: |
+          find . -name "*.php" \
+            -not -path "./.git/*" \
+            -not -path "./vendor/*" \
+            -print0 | xargs -0 -n1 php -l
+
+      - name: Verify version consistency
+        run: |
+          PLUGIN_VER=$(sed -n "s/.*Version:[[:space:]]*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" ownpay-payment-gateway.php | head -1)
+          DEFINE_VER=$(sed -n "s/.*define('OPWC_VERSION', '\([0-9.]*\)').*/\1/p" ownpay-payment-gateway.php | head -1)
+          README_VER=$(sed -n "s/^Stable tag: *//p" readme.txt | head -1)
+          REQ_HEADER=$(sed -n "s/.*Requires at least:[[:space:]]*\([0-9.]*\).*/\1/p" ownpay-payment-gateway.php | head -1)
+          REQ_README=$(sed -n "s/^Requires at least: *//p" readme.txt | head -1)
+
+          echo "Plugin header Version : $PLUGIN_VER"
+          echo "OPWC_VERSION constant  : $DEFINE_VER"
+          echo "readme.txt Stable tag  : $README_VER"
+          echo "Plugin header Requires : $REQ_HEADER"
+          echo "readme.txt Requires    : $REQ_README"
+
+          FAIL=0
+          if [ "$PLUGIN_VER" != "$README_VER" ] || [ "$PLUGIN_VER" != "$DEFINE_VER" ]; then
+            echo "::error::Version mismatch: header=$PLUGIN_VER, OPWC_VERSION=$DEFINE_VER, readme Stable tag=$README_VER"
+            FAIL=1
+          fi
+          if [ "$REQ_HEADER" != "$REQ_README" ]; then
+            echo "::error::'Requires at least' mismatch: header=$REQ_HEADER, readme=$REQ_README"
+            FAIL=1
+          fi
+          exit $FAIL
+
+      - name: Verify release/deploy/sync workflow expectations
+        run: |
+          ruby <<'RUBY'
+          require 'yaml'
+
+          def assert!(condition, message)
+            raise message unless condition
+          end
+
+          def workflow_on(workflow)
+            workflow['on'] || workflow[true] || {}
+          end
+
+          deploy = YAML.load_file('.github/workflows/deploy-wporg.yml')
+          sync = YAML.load_file('.github/workflows/sync-assets.yml')
+          release = YAML.load_file('.github/workflows/release.yml')
+          pr_checks = YAML.load_file('.github/workflows/pr-checks.yml')
+
+          deploy_tags = Array(workflow_on(deploy).dig('push', 'tags'))
+          assert!(deploy_tags.include?('v*'), 'deploy-wporg must trigger on v* tags')
+
+          deploy_step = deploy.dig('jobs', 'deploy', 'steps')&.find { |step| step['uses'] == '10up/action-wordpress-plugin-deploy@stable' }
+          deploy_env = deploy_step&.fetch('env', {})
+          assert!(deploy_env && deploy_env['VERSION'].to_s.include?('steps.version.outputs.version'), 'deploy workflow must pass resolved VERSION to SVN deploy action')
+
+          sync_push = workflow_on(sync).fetch('push', {})
+          assert!(Array(sync_push['branches']).include?('main'), 'sync-assets must run on main')
+          sync_paths = Array(sync_push['paths'])
+          assert!(sync_paths.include?('screenshots/**') && sync_paths.include?('readme.txt'), 'sync-assets must run for screenshots/** and readme.txt changes')
+
+          required_distignore = ['.github', 'screenshots', 'tests', 'node_modules', 'composer.json', 'package.json', 'phpunit.xml', 'phpunit.xml.dist', 'phpcs.xml', 'phpcs.xml.dist', 'phpstan.neon']
+          distignore_entries = File.readlines('.distignore', chomp: true).map(&:strip).reject(&:empty?)
+          missing_entries = required_distignore.reject { |entry| distignore_entries.include?(entry) }
+          assert!(missing_entries.empty?, ".distignore missing entries: #{missing_entries.join(', ')}")
+
+          plugin_check_step = pr_checks.dig('jobs', 'checks', 'steps')&.find { |step| step['uses'] == 'wordpress/plugin-check-action@v1' }
+          assert!(plugin_check_step, 'WordPress Plugin Check step is required')
+          plugin_check_with = plugin_check_step.fetch('with', {})
+          assert!(plugin_check_with['slug'] == 'ownpay-payment-gateway', 'Plugin Check slug must be ownpay-payment-gateway')
+          assert!(plugin_check_with['exclude-directories'] == '.github,screenshots', 'Plugin Check exclude-directories must remain .github,screenshots')
+          assert!(plugin_check_with['exclude-files'] == '.distignore', 'Plugin Check exclude-files must remain .distignore')
+
+          changelog_step = release.dig('jobs', 'release', 'steps')&.find { |step| step['id'] == 'changelog' }
+          changelog_script = changelog_step&.fetch('run', '').to_s
+          assert!(changelog_script.include?('readme.txt'), 'release changelog extraction must read readme.txt')
+          assert!(changelog_script.include?('= ${VERSION} ='), 'release changelog extraction must target the requested version heading')
+
+          puts 'Workflow release/deploy/sync checks passed.'
+          RUBY
+
+      - name: WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          # The repo is named "OwnPay-WordPress" but the WordPress.org slug
+          # (and Text Domain header) is "ownpay-payment-gateway" — without
+          # this the action infers the slug from the repo name and every
+          # translation call is flagged as a false-positive text-domain
+          # mismatch.
+          slug: 'ownpay-payment-gateway'
+          exclude-directories: '.github,screenshots'
+          exclude-files: '.distignore'

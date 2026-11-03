@@ -1,0 +1,30 @@
+name: Update WordPress.org Assets
+
+# Lets banners/icons/screenshots or readme.txt copy change update the
+# WordPress.org listing without cutting a new plugin release.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'screenshots/**'
+      - 'readme.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  assets:
+    name: Push assets + readme to WordPress.org
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: WordPress Plugin Asset/Readme Update
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: ownpay-payment-gateway
+          ASSETS_DIR: screenshots
