@@ -13,8 +13,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Plugin version to deploy (e.g. 1.3.1). Required when dispatched manually or from release.yml; ignored on a tag push, which derives it from the tag.'
-        required: false
+        description: 'Plugin version to deploy (e.g. 1.3.1). Required for this trigger (manual run or release.yml); ignored on a tag push, which derives it from the tag.'
+        required: true
         type: string
 
 permissions:
@@ -30,16 +30,33 @@ jobs:
 
       - name: Resolve plugin version
         id: version
+        # DISPATCH_VERSION is passed through env and read as a quoted shell
+        # variable rather than interpolating ${{ inputs.version }} straight
+        # into the script - GitHub Actions substitutes expressions as raw
+        # text before the shell ever runs, so inlining untrusted/arbitrary
+        # input there is a script-injection risk.
+        env:
+          DISPATCH_VERSION: ${{ inputs.version }}
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="$DISPATCH_VERSION"
+            if [ -z "$VERSION" ]; then
+              echo "::error::workflow_dispatch requires a non-empty 'version' input."
+              exit 1
+            fi
           else
             VERSION="${GITHUB_REF_NAME#v}"
+            if [ -z "$VERSION" ]; then
+              echo "::error::Could not resolve a plugin version from the pushed tag."
+              exit 1
+            fi
           fi
-          if [ -z "$VERSION" ]; then
-            echo "::error::Could not resolve a plugin version to deploy."
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version '$VERSION' is not a valid X.Y.Z semantic version."
             exit 1
           fi
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Deploying version: $VERSION"
 
