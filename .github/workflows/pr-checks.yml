@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7 # v7.0.1
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2 (2024)
         with:
           php-version: '8.3'
 
@@ -41,6 +41,18 @@ jobs:
           echo "readme.txt Stable tag  : $README_VER"
           echo "Plugin header Requires : $REQ_HEADER"
           echo "readme.txt Requires    : $REQ_README"
+
+          # Fail loudly if extraction broke (e.g. a header/readme format
+          # change the sed patterns don't match), rather than letting two
+          # empty strings compare equal and silently pass the check below.
+          for name_value in "PLUGIN_VER:$PLUGIN_VER" "DEFINE_VER:$DEFINE_VER" "README_VER:$README_VER" "REQ_HEADER:$REQ_HEADER" "REQ_README:$REQ_README"; do
+            name="${name_value%%:*}"
+            value="${name_value#*:}"
+            if [ -z "$value" ]; then
+              echo "::error::Could not extract $name - check the plugin header / readme.txt format."
+              exit 1
+            fi
+          done
 
           FAIL=0
           if [ "$PLUGIN_VER" != "$README_VER" ] || [ "$PLUGIN_VER" != "$DEFINE_VER" ]; then
@@ -71,12 +83,24 @@ jobs:
           release = YAML.load_file('.github/workflows/release.yml')
           pr_checks = YAML.load_file('.github/workflows/pr-checks.yml')
 
-          deploy_tags = Array(workflow_on(deploy).dig('push', 'tags'))
-          assert!(deploy_tags.include?('v*'), 'deploy-wporg must trigger on v* tags')
+          def pinned_sha_action?(step, repo)
+            uses = step&.fetch('uses', '').to_s
+            uses.start_with?("#{repo}@") && uses.split('@', 2).last =~ /\A[0-9a-f]{40}\z/
+          end
 
-          deploy_step = deploy.dig('jobs', 'deploy', 'steps')&.find { |step| step['uses'] == '10up/action-wordpress-plugin-deploy@stable' }
+          deploy_tags = Array(workflow_on(deploy).dig('push', 'tags'))
+          assert!(deploy_tags.include?('v*'), 'deploy-wporg must trigger on v* tags (fallback for manual tag pushes)')
+          assert!(workflow_on(deploy).dig('workflow_dispatch', 'inputs', 'version'), 'deploy-wporg must accept an explicit "version" input so release.yml can dispatch it directly (tags pushed with GITHUB_TOKEN do not auto-trigger workflows)')
+
+          deploy_step = deploy.dig('jobs', 'deploy', 'steps')&.find { |step| pinned_sha_action?(step, '10up/action-wordpress-plugin-deploy') }
+          assert!(deploy_step, 'deploy workflow must pin 10up/action-wordpress-plugin-deploy to a full commit SHA')
           deploy_env = deploy_step&.fetch('env', {})
           assert!(deploy_env && deploy_env['VERSION'].to_s.include?('steps.version.outputs.version'), 'deploy workflow must pass resolved VERSION to SVN deploy action')
+
+          release_dispatch_step = release.dig('jobs', 'release', 'steps')&.find { |step| step['run'].to_s.include?('gh workflow run deploy-wporg.yml') }
+          assert!(release_dispatch_step, 'release workflow must explicitly dispatch deploy-wporg.yml, since its own tag push (via GITHUB_TOKEN) will not trigger it automatically')
+          release_perms = release['permissions'] || {}
+          assert!(release_perms['actions'] == 'write', 'release workflow needs actions: write permission to dispatch deploy-wporg.yml')
 
           sync_push = workflow_on(sync).fetch('push', {})
           assert!(Array(sync_push['branches']).include?('main'), 'sync-assets must run on main')
@@ -88,8 +112,8 @@ jobs:
           missing_entries = required_distignore.reject { |entry| distignore_entries.include?(entry) }
           assert!(missing_entries.empty?, ".distignore missing entries: #{missing_entries.join(', ')}")
 
-          plugin_check_step = pr_checks.dig('jobs', 'checks', 'steps')&.find { |step| step['uses'] == 'wordpress/plugin-check-action@v1' }
-          assert!(plugin_check_step, 'WordPress Plugin Check step is required')
+          plugin_check_step = pr_checks.dig('jobs', 'checks', 'steps')&.find { |step| pinned_sha_action?(step, 'wordpress/plugin-check-action') }
+          assert!(plugin_check_step, 'WordPress Plugin Check step is required and must pin wordpress/plugin-check-action to a full commit SHA')
           plugin_check_with = plugin_check_step.fetch('with', {})
           assert!(plugin_check_with['slug'] == 'ownpay-payment-gateway', 'Plugin Check slug must be ownpay-payment-gateway')
           assert!(plugin_check_with['exclude-directories'] == '.github,screenshots', 'Plugin Check exclude-directories must remain .github,screenshots')
@@ -104,7 +128,7 @@ jobs:
           RUBY
 
       - name: WordPress Plugin Check
-        uses: wordpress/plugin-check-action@v1
+        uses: wordpress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
         with:
           # The repo is named "OwnPay-WordPress" but the WordPress.org slug
           # (and Text Domain header) is "ownpay-payment-gateway" — without

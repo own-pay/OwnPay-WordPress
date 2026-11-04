@@ -7,13 +7,14 @@ on:
 
 permissions:
   contents: write
+  actions: write # needed to dispatch deploy-wporg.yml below
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7 # v7.0.1
 
       - name: Extract plugin version
         id: version
@@ -110,3 +111,25 @@ jobs:
             --notes-file /tmp/release-body.md
 
           echo "Release ${TAG} created successfully with ${ZIP_NAME} asset."
+
+      - name: Trigger WordPress.org deploy
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # The "Create Git tag" step above pushes the tag using the default
+          # GITHUB_TOKEN, and GitHub Actions does NOT start other workflow
+          # runs (including deploy-wporg.yml's `push: tags` trigger) from
+          # events produced by that token - this is a deliberate
+          # anti-recursion rule, not a bug. So deploy-wporg.yml is started
+          # explicitly here instead of being left to fire on its own.
+          #
+          # DEPLOY_VERSION goes through env and is read as a quoted shell
+          # variable rather than interpolated directly into the script, same
+          # reasoning as deploy-wporg.yml's own version-resolution step.
+          gh workflow run deploy-wporg.yml \
+            --ref main \
+            -f version="$DEPLOY_VERSION"
+
+          echo "Dispatched deploy-wporg.yml for version $DEPLOY_VERSION."
