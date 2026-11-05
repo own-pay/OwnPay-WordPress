@@ -5,8 +5,8 @@
  * Description:     Accept card, bank transfer, and mobile banking payments in WooCommerce via OwnPay.
  * Author:          OwnPay
  * Author URI:      https://ownpay.org
- * Version:         1.3.0
- * Requires at least: 6.5
+ * Version:         1.4.0
+ * Requires at least: 6.7
  * Requires PHP:    8.0
  * Requires Plugins: woocommerce
  * License:         GPL-2.0-or-later
@@ -22,7 +22,7 @@ if (!defined('WPINC')) die;
 /**
  * Current plugin version.
  */
-define('OPWC_VERSION', '1.3.0');
+define('OPWC_VERSION', '1.4.0');
 define('OPWC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('OPWC_ASSETS_DIR', plugin_dir_url(__FILE__) . 'assets/');
 
@@ -95,3 +95,34 @@ function opwc_run_plugin()
 }
 
 add_action('plugins_loaded', 'opwc_run_plugin');
+
+/**
+ * Add Settings, Docs and Support links to the plugin row on the Plugins screen,
+ * after the default "Deactivate" link.
+ *
+ * @param string[] $links Existing action links.
+ * @return string[]
+ */
+function opwc_plugin_action_links($links)
+{
+    $custom = array(
+        'opwc_settings' => sprintf(
+            '<a href="%s">%s</a>',
+            esc_url(admin_url('admin.php?page=wc-settings&tab=checkout&section=ownpay')),
+            esc_html__('Settings', 'ownpay-payment-gateway')
+        ),
+        'opwc_docs'     => sprintf(
+            '<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+            esc_url('https://ownpay.org/docs/developer/integration/woocommerce'),
+            esc_html__('Docs', 'ownpay-payment-gateway')
+        ),
+        'opwc_support'  => sprintf(
+            '<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+            esc_url('https://www.facebook.com/share/g/1N6NKbjgQH'),
+            esc_html__('Support', 'ownpay-payment-gateway')
+        ),
+    );
+
+    return array_merge($links, $custom);
+}
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'opwc_plugin_action_links');

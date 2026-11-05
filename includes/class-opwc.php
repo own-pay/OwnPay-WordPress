@@ -39,7 +39,7 @@ class OPWC
         if (defined('OPWC_VERSION')) {
             $this->version = OPWC_VERSION;
         } else {
-            $this->version = '1.2.0';
+            $this->version = '1.4.0';
         }
 
         $this->plugin_name = 'ownpay-payment-gateway';

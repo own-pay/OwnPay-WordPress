@@ -2,11 +2,11 @@
 Contributors: ownpay
 Donate link: https://ownpay.org/donate
 Tags: ownpay, woocommerce, payment gateway, credit card, checkout
-Requires at least: 6.5
+Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 8.0
 Requires Plugins: woocommerce
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,10 +71,18 @@ This plugin communicates with the OwnPay payment API (configurable endpoint) to 
 
 == Upgrade Notice ==
 
+= 1.4.0 =
+Adds Settings, Docs and Support links on the Plugins screen. Now requires WordPress 6.7 or higher.
+
 = 1.3.0 =
 Fixes failed and cancelled payment redirects for guest customers. Recommended for all users.
 
 == Changelog ==
+
+= 1.4.0 =
+* Added "Settings", "Docs" and "Support" quick links to the plugin row on the Plugins screen, after "Deactivate".
+* Raised minimum required WordPress version to 6.7.
+* Updated release automation: deploy to WordPress.org is now dispatched explicitly after tagging, GitHub Actions pinned to commit SHAs.
 
 = 1.3.0 =
 * Fixed cancel/failed payment redirect to use guest-compatible pages (Pay for Order for failed, Cart for cancelled).
